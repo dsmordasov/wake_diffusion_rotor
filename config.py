@@ -19,15 +19,20 @@ plt.close('all')
 
 #%% Wind turbine definition
 from py_wake_ellipsys.wind_farm_models.ellipsys_lib.ellipsys_wind_turbines import EllipSysOneTypeWT
+from py_wake_ellipsys.examples.data.turbines.ADairfoil import ADairfoil_path
+
 
 # DTU10MW for Joukowski `2xxx` AD forcing
 from py_wake_ellipsys.examples.data.turbines.dtu10mw import dtu10mw_ct_curve
 from py_wake_ellipsys.examples.data.turbines.dtu10mw import dtu10mw_power_curve
 from py_wake_ellipsys.examples.data.turbines.dtu10mw import dtu10mw_rpm_curve
+from py_wake_ellipsys.examples.data.turbines.dtu10mw import dtu10mw_pitch_curve
+from py_wake_ellipsys.examples.data.turbines.dtu10mw import dtu10mw_bladeloading
 
 class DTU10MW(EllipSysOneTypeWT):
     def __init__(self):
-        EllipSysOneTypeWT.__init__(self, name='DTU10MW',
+        EllipSysOneTypeWT.__init__(self,
+        name='DTU10MW',
         diameter=178.3,
         hub_height=119.0,
         cutin=4.0,
@@ -40,15 +45,14 @@ class DTU10MW(EllipSysOneTypeWT):
         ct_func=self.dtu10mw_ct,
         power_func=self.dtu10mw_power,
         rpm_func=self.dtu10mw_rpm_curve,
-        # input on pitch function etc is not needed for non-3xxx forcings, but they are required positional arguments
-        pitch_func='',
-        bladeloading_func='',
-        airfoildata_file='',
-        airfoildata_path='',
-        airfoildata_file_type='',  # 1=flex5, 2=hawc2
-        bladegeo_file='',
-        bladegeo_path=''
-        ), # Below are re-definitions for ease of access
+        pitch_func=self.dtu10mw_pitch,
+        bladeloading_func=self.dtu10mw_bladeloading,
+        airfoildata_file='dtu10mw.pc',
+        airfoildata_path=ADairfoil_path,
+        airfoildata_file_type=2,  # 1=flex5, 2=hawc2
+        bladegeo_file='dtu10mw.geo',
+        bladegeo_path=ADairfoil_path
+        ) # Below are re-definitions for ease of access
         self.D=178.3
         self.zRef=119.0
     
@@ -60,6 +64,15 @@ class DTU10MW(EllipSysOneTypeWT):
 
     def dtu10mw_rpm_curve(self, u):
         return np.interp(u, dtu10mw_rpm_curve[:, 0], dtu10mw_rpm_curve[:, 1])
+    
+    def dtu10mw_pitch(self, u):
+        return np.interp(u, dtu10mw_pitch_curve[:, 0], dtu10mw_pitch_curve[:, 1])
+    
+    def dtu10mw_bladeloading(self, r):
+        Qx = np.interp(r, dtu10mw_bladeloading[:, 0], dtu10mw_bladeloading[:, 1])
+        Qy = np.interp(r, dtu10mw_bladeloading[:, 0], dtu10mw_bladeloading[:, 2])
+        Qz = np.interp(r, dtu10mw_bladeloading[:, 0], dtu10mw_bladeloading[:, 3])
+        return Qx, Qy, Qz
 
 from py_wake_ellipsys.examples.data.turbines.nrel5mw import nrel5mw_ct_curve
 from py_wake_ellipsys.examples.data.turbines.nrel5mw import nrel5mw_power_curve
