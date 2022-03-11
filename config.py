@@ -2,8 +2,22 @@
 This file was made for increased ease of automating PyWakeEllipSys simulations.
 """
 import numpy as np
+import matlotlib as mpl
+import matplotlib.pyplot as plt
 
-# Wind turbine definition
+#%% Plot style, generously donated by Mads Christian Baungaard
+mpl.style.use('classic')
+plt.rcParams['font.family'] = 'STIXGeneral'
+plt.rcParams["legend.scatterpoints"] = 1
+plt.rcParams["legend.numpoints"] = 1
+plt.rcParams['grid.linestyle'] = ':' # Dotted gridlines
+mpl.rcParams['lines.linewidth'] = 2
+plt.rcParams['axes.grid']=True
+yd = dict(rotation=0,ha='right') # I couldn't find a way to customize these, so use a dict everytime..
+plt.close('all')
+
+
+#%% Wind turbine definition
 from py_wake_ellipsys.wind_farm_models.ellipsys_lib.ellipsys_wind_turbines import EllipSysOneTypeWT
 
 # DTU10MW for Joukowski `2xxx` AD forcing
@@ -129,9 +143,7 @@ uf_res_grid = {
 # Wind farm settings
 from py_wake.examples.data.hornsrev1 import Hornsrev1Site
 from py_wake.site._site import UniformWeibullSite
-
-
-        
+   
 
 class Single_Hornsrev1_wt(Hornsrev1Site):
     def __init__(self):
