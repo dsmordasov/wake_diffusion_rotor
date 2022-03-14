@@ -1,3 +1,8 @@
 # Folder for example PyWakeEllipSys and HAWC2S simulation results,
 # made for the sake of postprocessing tools development
 /example_data/
+
+
+/my_dtu_10mw/
+/hawc2s_hawcstab2_2.15_x64/
+/__pycache__/
