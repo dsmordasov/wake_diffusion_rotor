@@ -1,3 +1,4 @@
+"""HAWC2S script suite/toolbox."""
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -7,12 +8,12 @@ import glob
 
 import config
 
-def hawc2s_blade_to_geo(save=True):
+def hawc2s_blade_to_geo(design_name, save=True):
     """Turn HAWC2S blade files into a PyWakeEllipSys blade file."""
 
-    # Make sure that there is only ONE ae.dat and .htc file in the given folder
-    ae_file_pathname = glob.glob("**/*ae.dat", recursive=True)[0]
-    htc_file_pathname = glob.glob("**/*.htc", recursive=True)[0]
+    # Make sure that there is only ONE ae.dat file in the given folder
+    ae_file_pathname = glob.glob("**/*ae.dat", recursive=True)[0] # TODO: Take `design_name` into consideration
+    htc_file_pathname = glob.glob(f"**/*{design_name}*.htc", recursive=True)[0]
     
     # Get blade aerodynamic data from the ae.dat file
     ae_data = np.loadtxt(ae_file_pathname, skiprows=2, usecols=(0, 1, 2))
@@ -73,7 +74,7 @@ def run_hawc2s(design_name):
     
     cwd = os.getcwd()
     if 'my_dtu_10mw' not in cwd:
-        os.chdir('my_dtu_10mw')
+        os.chdir('my_dtu_10mw') # HAWC2S must be ran from the folder with the .htc file
     
     
     htc_path = glob.glob(f"*{design_name}*.htc", recursive=True)[0]
@@ -85,4 +86,63 @@ def run_hawc2s(design_name):
     stream = os.popen(fr'cmd /k "{hawc2s_path} {htc_path}"')
     stream = stream.read()
     print(f"CMD OUTPUT FOR THE '{design_name}' DESIGN\n-------------------------------------\n{stream}")
+
+
+def pp_hawc2s_ind(design_name, U=8, rho=1.225):
+    """Post process HAWC2S .ind  file.
+    
+    HAWC2S goes bonkers if its input files include the tip of the blade,
+    so for plotting purposes, this was written to add a zero tangential and
+    azimuthal force at the blade tip (denoted `tip fix` in comments).
+    """
+    hawc2s_ind_path = glob.glob(f"**/*{design_name}_u*.ind", recursive=True)[0]
+    if not hawc2s_ind_path:
+        print("Found no HAWC2S .ind files!")
+    
+    data = np.loadtxt(hawc2s_ind_path)
+    s       = data[:, 0]      # Blade span [m]
+    S       = s[-1] + 0.001   # Maximum blade span (w/ tip fix) [m]
+    s       = np.append(s, S) # Tip fix
+    Ft      = data[:, 6]      # Tangential force per unit length [N/m]
+    Ft      = np.append(Ft, 0)# Tip fix
+    Fn      = data[:, 7]      # Azumuthal force per unit length [N/m]
+    Fn      = np.append(Fn, 0)# Tip fix
+    
+    # Normalisation of forces, non-dimensionalisation of radius
+    s_nd    = s / S           # Blade span, non-dimensioned [-]
+    ft = Ft / (rho * S * U**2) # Normalised tangential force [-]
+    fn = Fn / (rho * S * U**2) # Normalised azimuthal force [-]
+    
+    # Some other useful values you can grab fron the .ind file
+    # C_L     = data[:, 16]     # Lift coefficient [-]
+    # C_D     = data[:, 17]     # Drag coefficient [-]
+    # C_L_C_D = C_L/C_D         # C_L/C_D [-]
+    # C_P     = data[:, 33]     # Power coefficient [-]
+    # C_T     = data[:, 32]     # Thrust coefficient [-]
+    # aoa     = np.rad2deg(data[:, 4])     # Angle of attack [deg]
+    
+    fig, ax = plt.subplots(2, 1, sharex=True, figsize=[10,6])
+    
+    ax[0].plot(s_nd, ft, label="HAWC2S")
+    ax[1].plot(s_nd, fn, label="HAWC2S")
+    
+    ax[0].set_ylabel('ft $[-]$')
+    ax[0].legend(loc=1)
+    ax[1].set_ylabel('fn $[-]$')
+    ax[1].set_xlabel('Blade radius r/R [-]')
+    plt.tight_layout()
+    
+    
+def pp_hawc2s_pwr(design_name):
+    """Post process HAWC2S .pwr file.
+    """
+    
+    hawc2s_pwr_path = glob.glob(f"**/*{design_name}.pwr", recursive=True)[0]
+    if not hawc2s_pwr_path:
+        print("Found no HAWC2S .pwr files!")
+        
+    data = np.loadtxt(hawc2s_pwr_path)
+    power = data[1] / 1000 # [MW]
+    print(f"Power: {np.round(power, 4)} MW.")
+    
     
