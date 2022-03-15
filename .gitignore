@@ -2,7 +2,6 @@
 # made for the sake of postprocessing tools development
 /example_data/
 
-
+/__pycache__/
 /my_dtu_10mw/
 /hawc2s_hawcstab2_2.15_x64/
-/__pycache__/
