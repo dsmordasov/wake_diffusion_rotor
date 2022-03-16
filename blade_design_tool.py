@@ -20,17 +20,14 @@ chord = ae_data[:, 1]  # Chord length [m]
 rel_thickness = ae_data[:, 2]  # Relative thickness (%)
 
 N = np.size(radius) # Number of sections
-    
+
+# Where the twist data can be found in the .htc file
+start_line = 110
+n_sec = 27
+end_line = start_line + n_sec
+
 # Get blade twist data from the input .htc file
-twist = np.genfromtxt(
-    htc_file_pathname,
-    # --------------------------------------------------
-    skip_header=110,  # This line may need to be changed.
-    # --------------------------------------------------
-    max_rows=27,
-    usecols=(4, 5),
-    comments=";",
-)
+twist = np.genfromtxt(htc_file_pathname, skip_header=start_line, max_rows=27, usecols=(4, 5), comments=";",)
 twist_radii = twist[:, 0] # Positions at which twist is defined in the .htc file
     
 # Create a .geo blade equivalent format matrix
@@ -61,8 +58,14 @@ cos_multiplier = np.cos(cos_coords)
 linear_chord_addition = False
 if linear_chord_addition:
     linear_multiplier = radius_nd - 1.0
-    chord_addition = -1. # [m]
+    chord_addition = -1.0 # [m]
     working_mat[:, 2] = working_mat[:, 2] + chord_addition * linear_multiplier
+    
+untwist_the_root = True
+if untwist_the_root:
+    linear_multiplier = radius_nd - 1.0
+    twist_addition = 8.0 # [deg]
+    working_mat[:, 1] = working_mat[:, 2] + twist_addition * linear_multiplier
 
 # Plot new chord and twist on top of old
 ax[0].plot(radius_nd, working_mat[:, 2], label="New")
@@ -81,17 +84,13 @@ except:
     print("Copying original .htc and ae.dat files FAILED. Script shutdown.")
     quit()
 
-start_line = 110
-n_sec = 27
-end_line = start_line + n_sec
-
 with open(new_htc_filename, 'r') as new_htc_file:
     content = new_htc_file.readlines()
 
-with open(new_htc_filename, 'r+') as new_htc_file: # TODO: Replace old ae filename
+with open(new_htc_filename, 'r+') as new_htc_file:
     for i, line in enumerate(new_htc_file):
         if "ae_filename" in line:
-            content[i] = f"\tae_filename ./data/{design_name}_ae.dat\n"
+            content[i] = f"\tae_filename ./data/{design_name}_ae.dat;\n"
         if i >= start_line and i < end_line:
             line = line.strip().split(" ")
             if "" in line: line.remove("") # In single-digit sections there can be a whitespace
@@ -101,7 +100,20 @@ with open(new_htc_filename, 'r+') as new_htc_file: # TODO: Replace old ae filena
             
 with open(new_htc_filename, 'w') as new_htc_file:
     new_htc_file.writelines(content)
+#%% Run HAWC2S
+import h2s
 
+U = 8 # Tested velocity [m/s]
+
+#blade_matrix = h2s.hawc2s_blade_to_geo(design_name, save=False)
+
+#h2s.plot_c_and_theta(blade_matrix)
+
+h2s.run_hawc2s(design_name)
+
+h2s.pp_hawc2s_ind(design_name, U=U)
+
+h2s.pp_hawc2s_pwr(design_name)
 
     
 
