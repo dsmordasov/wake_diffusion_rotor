@@ -6,6 +6,8 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
+import os
+
 #%% Plot style, generously donated by Mads Christian Baungaard
 mpl.style.use('classic')
 plt.rcParams['font.family'] = 'STIXGeneral'
@@ -64,7 +66,7 @@ if not platform == 'win32':
             airfoildata_path=ADairfoil_path,
             airfoildata_file_type=2,  # 1=flex5, 2=hawc2
             bladegeo_file='dtu10mw.geo',
-            bladegeo_path=ADairfoil_path
+            bladegeo_path=ADairfoil_path,
             ) # Below are re-definitions for ease of access
             self.D=178.3
             self.zRef=119.0
