@@ -2,11 +2,15 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-import config
-
 import shutil
 
-design_name = "new_design"
+import config # Import no matter what, it loads up the figure style
+
+import h2s
+
+U = 8 # Tested velocity [m/s]
+
+design_name = "flattened"
 
 #%% Load original blade design
 # Read .ae and .htc files
@@ -61,10 +65,10 @@ if linear_chord_addition:
     chord_addition = -1.0 # [m]
     working_mat[:, 2] = working_mat[:, 2] + chord_addition * linear_multiplier
     
-untwist_the_root = True
+untwist_the_root = False
 if untwist_the_root:
     linear_multiplier = radius_nd - 1.0
-    twist_addition = 8.0 # [deg]
+    twist_addition = 14.5 # [deg]
     working_mat[:, 1] = working_mat[:, 2] + twist_addition * linear_multiplier
 
 # Plot new chord and twist on top of old
@@ -101,19 +105,14 @@ with open(new_htc_filename, 'r+') as new_htc_file:
 with open(new_htc_filename, 'w') as new_htc_file:
     new_htc_file.writelines(content)
 #%% Run HAWC2S
-import h2s
-
-U = 8 # Tested velocity [m/s]
-
-#blade_matrix = h2s.hawc2s_blade_to_geo(design_name, save=False)
-
-#h2s.plot_c_and_theta(blade_matrix)
 
 h2s.run_hawc2s(design_name)
 
 h2s.pp_hawc2s_ind(design_name, U=U)
 
 h2s.pp_hawc2s_pwr(design_name)
+
+h2s.hawc2s_files_to_geo(design_name)
 
     
 
