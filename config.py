@@ -1,5 +1,6 @@
 """
-This file was made for increased ease of automating PyWakeEllipSys simulations.
+This file was made for increased ease of automating PyWakeEllipSys simulations,
+HAWC2S work and more. 
 """
 import numpy as np
 import matplotlib as mpl
@@ -17,8 +18,10 @@ yd = dict(rotation=0,ha='right') # I couldn't find a way to customize these, so 
 plt.close('all')
 
 #%% To enable post-processing locally, not on gbar, we can not try to import PWES files
-local = True # Change to False when running on gbar
-if not local:
+
+from sys import platform # Check if running locally, or on gbar
+
+if not platform == 'win32':
     # Wind turbine imports
     from py_wake_ellipsys.wind_farm_models.ellipsys_lib.ellipsys_wind_turbines import EllipSysOneTypeWT
     from py_wake_ellipsys.examples.data.turbines.ADairfoil import ADairfoil_path
