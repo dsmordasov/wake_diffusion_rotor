@@ -11,9 +11,8 @@ import config
 def hawc2s_files_to_geo(design_name, save=True):
     """Turn HAWC2S blade files into a PyWakeEllipSys blade file."""
 
-    # Make sure that there is only ONE ae.dat file in the given folder
-    ae_file_pathname = glob.glob("**/*ae.dat", recursive=True)[0] # TODO: Take `design_name` into consideration
-    htc_file_pathname = glob.glob(f"**/*{design_name}*.htc", recursive=True)[0]
+    ae_file_pathname = glob.glob(f"**/{design_name}_ae.dat", recursive=True)[0]
+    htc_file_pathname = glob.glob(f"**/{design_name}.htc", recursive=True)[0]
     
     # Get blade aerodynamic data from the ae.dat file
     ae_data = np.loadtxt(ae_file_pathname, skiprows=2, usecols=(0, 1, 2))
@@ -107,16 +106,19 @@ def pp_hawc2s_ind(design_name, U=8, rho=1.225):
     Ft      = np.append(Ft, 0)# Tip fix
     Fn      = data[:, 7]      # Azumuthal force per unit length [N/m]
     Fn      = np.append(Fn, 0)# Tip fix
+    aoa     = np.rad2deg(data[:, 4])     # Angle of attack [deg]
+    aoa     = np.append(aoa, 0)# Tip fix
     
     # Normalisation of forces, non-dimensionalisation of radius
     s_nd    = s / S           # Blade span, non-dimensioned [-]
     ft = Ft / (rho * S * U**2) # Normalised tangential force [-]
     fn = Fn / (rho * S * U**2) # Normalised azimuthal force [-]
     
-    fig, ax = plt.subplots(2, 1, sharex=True, figsize=[10,6])
+    fig, ax = plt.subplots(3, 1, sharex=True, figsize=[10,6])
     
     ax[0].plot(s_nd, ft, label="Baseline")
     ax[1].plot(s_nd, fn, label="Baseline")
+    ax[2].plot(s_nd, aoa, label="Baseline")
     
     data = np.loadtxt(new_ind_path)
     s       = data[:, 0]      # Blade span [m]
@@ -126,6 +128,8 @@ def pp_hawc2s_ind(design_name, U=8, rho=1.225):
     Ft      = np.append(Ft, 0)# Tip fix
     Fn      = data[:, 7]      # Azumuthal force per unit length [N/m]
     Fn      = np.append(Fn, 0)# Tip fix
+    aoa     = np.rad2deg(data[:, 4])     # Angle of attack [deg]
+    aoa     = np.append(aoa, 0)# Tip fix
     
     # Normalisation of forces, non-dimensionalisation of radius
     s_nd    = s / S           # Blade span, non-dimensioned [-]
@@ -142,11 +146,13 @@ def pp_hawc2s_ind(design_name, U=8, rho=1.225):
     
     ax[0].plot(s_nd, ft, label=f"{design_name}")
     ax[1].plot(s_nd, fn, label=f"{design_name}")
+    ax[2].plot(s_nd, aoa, label=f"{design_name}")
     
     ax[0].set_ylabel('ft $[-]$')
-    ax[0].legend(loc=2)
+    ax[0].legend(loc=0)
     ax[1].set_ylabel('fn $[-]$')
-    ax[1].set_xlabel('Blade radius r/R [-]')
+    ax[2].set_ylabel('aoa $[deg]$')
+    ax[2].set_xlabel('Blade radius r/R $[-]$')
     plt.tight_layout()
     
     
