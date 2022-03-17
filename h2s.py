@@ -43,7 +43,7 @@ def hawc2s_files_to_geo(design_name, save=True):
     header = " # Number of positions, cols: r [m]  twist [g]  chord [m] rel_thickness [%]"
     
     if save:
-        np.savetxt("blade.geo", geo_mat, comments=str(N), header=header)
+        np.savetxt(f"{design_name}_blade.geo", geo_mat, comments=str(N), header=header)
         print(".geo blade file created!")
     
     return geo_mat
