@@ -14,6 +14,11 @@ def hawc2s_files_to_geo(design_name, save=True):
     ae_file_pathname = glob.glob(f"**/{design_name}_ae.dat", recursive=True)[0]
     htc_file_pathname = glob.glob(f"**/{design_name}.htc", recursive=True)[0]
     
+    if not ae_file_pathname:
+        print(f"No {design_name}_ae.dat file found!")
+    if not htc_file_pathname:
+        print(f"No {design_name}.htc file found!")
+    
     # Get blade aerodynamic data from the ae.dat file
     ae_data = np.loadtxt(ae_file_pathname, skiprows=2, usecols=(0, 1, 2))
     radius = ae_data[:, 0]  # Span [m]
@@ -44,7 +49,7 @@ def hawc2s_files_to_geo(design_name, save=True):
     
     if save:
         np.savetxt(f"{design_name}_blade.geo", geo_mat, comments=str(N), header=header)
-        print(".geo blade file created!")
+        print(f"{design_name}_blade.geo file created!")
     
     return geo_mat
 
