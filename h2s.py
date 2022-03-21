@@ -41,14 +41,15 @@ def hawc2s_files_to_geo(design_name, save=True):
     # Create and save the final .geo blade format matrix
     geo_mat = np.zeros([N, 4])
     geo_mat[:, 0] = radius
-    geo_mat[1:, 1] = np.interp(geo_mat[1:, 0], twist[:, 0], twist[:, 1])
+    geo_mat[1:, 1] = - np.interp(geo_mat[1:, 0], twist[:, 0], twist[:, 1]) # Different sign for PWES!
     geo_mat[:, 2] = chord
     geo_mat[:, 3] = rel_thickness
     
-    header = " # Number of positions, cols: r [m]  twist [g]  chord [m] rel_thickness [%]"
+    header = f"#\n#\n {N}# Number of positions\n#\n# cols: r [m]  twist [g]  chord [m] rel_thickness [%]"
+    comments = ""
     
     if save:
-        np.savetxt(f"{design_name}_blade.geo", geo_mat, comments=str(N), header=header)
+        np.savetxt(f"{design_name}_blade.geo", geo_mat, comments=comments, header=header) #comments=str(N)
         print(f"{design_name}_blade.geo file created!")
     
     return geo_mat
