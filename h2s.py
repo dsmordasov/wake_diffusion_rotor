@@ -176,6 +176,6 @@ def pp_hawc2s_pwr(design_name):
     new_power = new_data[1] / 1000 # [MW]
     percentage_difference = (new_power - baseline_power) / baseline_power * 100
     print(f"{'Baseline P: ':<20}" + f"{str(np.round(baseline_power, 4))} MW.")
-    print(f"{'new_design P: ':<20}" + f"{str(np.round(new_power, 4))} MW.")
+    print(f"{'{design_name} P: ':<20}" + f"{str(np.round(new_power, 4))} MW.")
     print(f"{'Delta P: ':<19}" + f"{str(np.round(percentage_difference, 2))} %.")
     
