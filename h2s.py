@@ -45,7 +45,7 @@ def hawc2s_files_to_geo(design_name, save=True):
     geo_mat[:, 2] = chord
     geo_mat[:, 3] = rel_thickness
     
-    header = f"#\n#\n {N}# Number of positions\n#\n# cols: r [m]  twist [g]  chord [m] rel_thickness [%]"
+    header = f"#\n#\n {N} # Number of positions\n#\n# cols: r [m]  twist [g]  chord [m] rel_thickness [%]"
     comments = ""
     
     if save:
