@@ -10,7 +10,8 @@ import h2s
 
 U = 8 # Tested velocity [m/s]
 
-design_name = "new_design"
+design_name = "cylindrical_root_0.25"
+save_design = True
 
 #%% Load original blade design
 # Read .ae and .htc files
@@ -64,14 +65,25 @@ working_mat = geo_mat.copy()
 linear_chord_addition = False
 if linear_chord_addition:
     linear_multiplier = radius_nd - 1.0
-    chord_addition = -1.0 # [m]
+    chord_addition = -0.5 # [m]
     working_mat[:, 2] = working_mat[:, 2] + chord_addition * linear_multiplier
     
 untwist_the_root = False
 if untwist_the_root:
     linear_multiplier = radius_nd - 1.0
-    twist_addition = 14.5 # [deg]
+    twist_addition = 3 # [deg]
     working_mat[:, 1] = working_mat[:, 1] + twist_addition * linear_multiplier
+
+make_root_cylindrical = True
+if make_root_cylindrical:
+    changes_until = 0.25 # r/R until which we use cylindrical airfoil
+    i = 0
+    for radius in radius_nd:
+        if radius <= changes_until:
+            working_mat[i, 3] = 100.0
+        i += 1
+            
+
 
 # Plot new chord and twist on top of old
 ax[0].plot(radius_nd, working_mat[:, 2], label=f"{design_name}")
@@ -143,7 +155,8 @@ h2s.pp_hawc2s_ind(design_name, U=U)
 
 h2s.pp_hawc2s_pwr(design_name)
 
-h2s.hawc2s_files_to_geo(design_name)
+if save_design:
+    h2s.hawc2s_files_to_geo(design_name)
 
     
 
