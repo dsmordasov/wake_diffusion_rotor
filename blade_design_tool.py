@@ -10,7 +10,7 @@ import h2s
 
 U = 8 # Tested velocity [m/s]
 
-design_name = "cylindrical_root_0.25"
+design_name = "lesser_root_c_2.0"
 save_design = True
 
 #%% Load original blade design
@@ -62,19 +62,30 @@ working_mat = geo_mat.copy()
 #cos_multiplier = np.cos(cos_coords)
 
 # Linear chord addition
-linear_chord_addition = False
+linear_chord_addition = True
 if linear_chord_addition:
     linear_multiplier = radius_nd - 1.0
-    chord_addition = -0.5 # [m]
-    working_mat[:, 2] = working_mat[:, 2] + chord_addition * linear_multiplier
+    chord_addition = -2.0 # [m]
+    changes_until = 0.25 # r/R until which we change the chord
+    i = 0
+    for radius in radius_nd:
+        if radius <= changes_until:
+            working_mat[i, 2] = working_mat[i, 2] - chord_addition * linear_multiplier[i]
+        i += 1
     
 untwist_the_root = False
 if untwist_the_root:
     linear_multiplier = radius_nd - 1.0
     twist_addition = 3 # [deg]
-    working_mat[:, 1] = working_mat[:, 1] + twist_addition * linear_multiplier
+    changes_until = 0.25 # r/R until which we change the chord
+    i = 0
+    for radius in radius_nd:
+        if radius <= changes_until:
+            working_mat[i, 1] = working_mat[i, 1] + twist_addition * linear_multiplier[i]
+        i += 1
+    
 
-make_root_cylindrical = True
+make_root_cylindrical = False
 if make_root_cylindrical:
     changes_until = 0.25 # r/R until which we use cylindrical airfoil
     i = 0
