@@ -8,6 +8,9 @@ import glob
 
 import config
 
+rho = 1.225 # Air density [kg/m^3]
+U = 8 # 
+
 def hawc2s_files_to_geo(design_name, save=True):
     """Turn HAWC2S blade files into a PyWakeEllipSys blade file."""
 
@@ -159,7 +162,57 @@ def pp_hawc2s_ind(design_name, U=8, rho=1.225):
     ax[1].set_ylabel('fn $[-]$')
     ax[2].set_ylabel('aoa $[deg]$')
     ax[2].set_xlabel('Blade radius r/R $[-]$')
+    ax[2].set_ylim([0, 10])
     plt.tight_layout()
+    
+
+def pp_hawc2s_bladepower(design_name):
+    """Calculate the power contribution along the blade.
+    """
+    # Find out how much power the wind turbine is producing
+    new_pwr_path = glob.glob(f"**/*{design_name}.pwr", recursive=True)[0]
+    if not new_pwr_path:
+        print(f"Found no {design_name} HAWC2S .pwr files!")
+    new_data = np.loadtxt(new_pwr_path)
+    new_power = new_data[1] / 1000 # [MW]
+    
+    # Calculate the power contributions along the blade
+    new_ind_path = glob.glob(f"**/*{design_name}_u*.ind", recursive=True)[0]
+    if not new_ind_path:
+        print(f"Found no {design_name} HAWC2S .ind files!")
+    
+    data = np.loadtxt(new_ind_path)
+    hub_diameter = 5.6        # Hub diameter [m]
+    s       = data[:, 0] + hub_diameter / 2      # Blade span [m]
+    S       = s[-1]           # Maximum blade span [m]
+    s_nd    = s / S           # Blade span, non-dimensioned [-]
+    delta_s = data[1:, 0] - data[:-1, 0] # Radial parts of the blade
+    C_P     = data[:, 33]
+    powers = C_P[1:] * 0.5 * rho * np.pi * (s[1:]**2 - s[:-1]**2) * U**3 /1e6
+    
+    print(f"Powers:\n{powers}")
+    
+    total_power = np.sum(powers) 
+    percentage_of_reported = total_power / new_power * 100
+    print(f"{'{design_name} summed P: ':<20}" + f"{str(np.round(total_power, 4))} MW.")
+    print(f"{'Percentage of P: ':<19}" + f"{str(np.round(percentage_of_reported, 2))} %.")
+    
+    power_percentages = powers / total_power * 100
+    power_cumsummed = np.cumsum(powers)
+    power_cumsummed_percentages = power_cumsummed / total_power * 100
+    
+    fig, ax = plt.subplots(1, 1, figsize=[10, 6])
+    
+    
+    ax.plot(s_nd[1:], power_percentages, label="Power Contribution")
+    ax.plot(s_nd[1:], power_cumsummed_percentages, label="Power Cumulative")
+    
+    ax.set_ylim([0, 100])
+    ax.set_xlabel('Blade radius r/R $[-]$')
+    ax.set_ylabel('Power $[\%]$')
+    plt.legend(loc="upper left")
+    
+    
     
     
 def pp_hawc2s_pwr(design_name):
