@@ -10,8 +10,8 @@ import h2s
 
 U = 8 # Tested velocity [m/s]
 
-design_name = "lesser_root_c_2.0"
-save_design = True
+design_name = "new_design"
+save_design = False
 
 #%% Load original blade design
 # Read .ae and .htc files
@@ -62,22 +62,22 @@ working_mat = geo_mat.copy()
 #cos_multiplier = np.cos(cos_coords)
 
 # Linear chord addition
-linear_chord_addition = True
+linear_chord_addition = False
 if linear_chord_addition:
     linear_multiplier = radius_nd - 1.0
-    chord_addition = -2.0 # [m]
-    changes_until = 0.25 # r/R until which we change the chord
+    chord_addition = -1.0 # [m]
+    changes_until = 0.5 # r/R until which we change the chord
     i = 0
     for radius in radius_nd:
         if radius <= changes_until:
             working_mat[i, 2] = working_mat[i, 2] - chord_addition * linear_multiplier[i]
         i += 1
     
-untwist_the_root = False
-if untwist_the_root:
-    linear_multiplier = radius_nd - 1.0
-    twist_addition = 3 # [deg]
-    changes_until = 0.25 # r/R until which we change the chord
+twist_the_root = False
+if twist_the_root:
+    linear_multiplier = - (radius_nd - 1.0)
+    twist_addition = -15.0 # Positive value adds twist [deg]
+    changes_until = 0.5 # r/R until which we change the chord
     i = 0
     for radius in radius_nd:
         if radius <= changes_until:
@@ -165,6 +165,8 @@ h2s.run_hawc2s(design_name)
 h2s.pp_hawc2s_ind(design_name, U=U)
 
 h2s.pp_hawc2s_pwr(design_name)
+
+h2s.pp_hawc2s_bladepower(design_name)
 
 if save_design:
     h2s.hawc2s_files_to_geo(design_name)
