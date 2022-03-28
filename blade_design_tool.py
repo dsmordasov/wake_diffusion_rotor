@@ -10,8 +10,8 @@ import h2s
 
 U = 8 # Tested velocity [m/s]
 
-design_name = "new_design"
-save_design = False
+design_name = "ncos_c_2.0"
+save_design = True
 
 #%% Load original blade design
 # Read .ae and .htc files
@@ -58,32 +58,46 @@ ax[1].set_xlabel("Blade radius r/R [-]")
 #%% Changing the design
 working_mat = geo_mat.copy()
 
-#cos_coords = np.arange(0, np.pi, 0.01)
-#cos_multiplier = np.cos(cos_coords)
 
 # Linear chord addition
-linear_chord_addition = False
-if linear_chord_addition:
+root_linear_chord_addition = False
+if root_linear_chord_addition:
     linear_multiplier = radius_nd - 1.0
-    chord_addition = -1.0 # [m]
-    changes_until = 0.5 # r/R until which we change the chord
+    chord_addition = -2.0 # [m]
+    changes_until = 0.4 # r/R until which we change the chord
     i = 0
     for radius in radius_nd:
         if radius <= changes_until:
             working_mat[i, 2] = working_mat[i, 2] - chord_addition * linear_multiplier[i]
         i += 1
+
+tip_linear_chord_addition = False
+if tip_linear_chord_addition:
+    linear_multiplier = np.flip(radius_nd - 1.0)
+    chord_addition = 1.0 # [m]
+    changes_from = 0.6 # r/R, counting down from 1.0, until which we change the chord
+    i = 0
+    for radius in radius_nd:
+        if radius  >= changes_from:
+            working_mat[i, 2] = working_mat[i, 2] - chord_addition * linear_multiplier[i]
+        i += 1
+
+cos_chord_addition = True
+if cos_chord_addition:
+    ncos_multiplier = - np.cos(radius_nd * 2 * np.pi) # Negative cos multiplier, from [-1, 1]
+    chord_addition = 2.0 # [m]
+    working_mat[:, 2] = working_mat[:, 2] - chord_addition * ncos_multiplier
     
 twist_the_root = False
 if twist_the_root:
     linear_multiplier = - (radius_nd - 1.0)
-    twist_addition = -15.0 # Positive value adds twist [deg]
-    changes_until = 0.5 # r/R until which we change the chord
+    twist_addition = -10.0 # Positive value adds twist [deg]
+    changes_until = 0.25 # r/R until which we change the chord
     i = 0
     for radius in radius_nd:
         if radius <= changes_until:
             working_mat[i, 1] = working_mat[i, 1] + twist_addition * linear_multiplier[i]
         i += 1
-    
 
 make_root_cylindrical = False
 if make_root_cylindrical:
