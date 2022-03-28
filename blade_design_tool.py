@@ -10,7 +10,7 @@ import h2s
 
 U = 8 # Tested velocity [m/s]
 
-design_name = "ncos_c_1.0"
+design_name = "new_design"
 save_design = True
 
 #%% Load original blade design
@@ -71,22 +71,22 @@ if root_linear_chord_addition:
             working_mat[i, 2] = working_mat[i, 2] - chord_addition * linear_multiplier[i]
         i += 1
 
-tip_linear_chord_addition = False
-if tip_linear_chord_addition:
-    linear_multiplier = np.flip(radius_nd - 1.0)
-    chord_addition = 1.0 # [m]
+tip_cos_chord_addition = True
+if tip_cos_chord_addition:
+    ncos_multiplier = - np.cos(radius_nd * np.pi) # Negative cos multiplier, from [-1, 1]
+    chord_addition = - 0.5 # [m]
     changes_from = 0.6 # r/R, counting down from 1.0, until which we change the chord
     i = 0
     for radius in radius_nd:
         if radius  >= changes_from:
-            working_mat[i, 2] = working_mat[i, 2] - chord_addition * linear_multiplier[i]
+            working_mat[i, 2] = working_mat[i, 2] + chord_addition * ncos_multiplier[i]
         i += 1
 
-cos_chord_addition = True
+cos_chord_addition = False
 if cos_chord_addition:
     ncos_multiplier = - np.cos(radius_nd * np.pi) # Negative cos multiplier, from [-1, 1]
     print(ncos_multiplier)
-    chord_addition = 1.0 # [m]
+    chord_addition = 2.0 # [m]
     working_mat[:, 2] = working_mat[:, 2] + chord_addition * ncos_multiplier
     
 twist_the_root = False
