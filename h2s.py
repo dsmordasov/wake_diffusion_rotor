@@ -186,12 +186,9 @@ def pp_hawc2s_bladepower(design_name):
     s       = data[:, 0] + hub_diameter / 2      # Blade span [m]
     S       = s[-1]           # Maximum blade span [m]
     s_nd    = s / S           # Blade span, non-dimensioned [-]
-    delta_s = data[1:, 0] - data[:-1, 0] # Radial parts of the blade
-    C_P     = data[:, 33]
-    powers = C_P[1:] * 0.5 * rho * np.pi * (s[1:]**2 - s[:-1]**2) * U**3 /1e6
-    
-    print(f"Powers:\n{powers}")
-    
+    C_P     = data[:, 33] # Power coefficient [-]
+    powers = C_P[1:] * 0.5 * rho * np.pi * (s[1:]**2 - s[:-1]**2) * U**3 /1e6 # [MW]
+        
     total_power = np.sum(powers) 
     percentage_of_reported = total_power / new_power * 100
     print(f"{'{design_name} summed P: ':<20}" + f"{str(np.round(total_power, 4))} MW.")
