@@ -11,7 +11,7 @@ import config
 
 new_grid = True
 run = True
-delta_variants = np.arange(0.15, 0.55, 0.05)
+delta_variants = np.arange(0.15, 0.65, 0.05)
 
 def run_delta_study(ad_jou_rootdelta=0.25,
                         ad_jou_roota=2.335,
@@ -79,7 +79,7 @@ def run_delta_study(ad_jou_rootdelta=0.25,
             print(f"Simulation ran in {runtime}s.")
             # Store 3D flow data as a netCDF file for the one flow case
             # Clip the netCDF data 
-            xyz = [10 * wt.D, 2 * wt.D, wt.zRef + wt.D] # [-x < xyz[0] < x, -y < xyz[1] < y, xyz[2] < z]
+            xyz = [20 * wt.D, 2 * wt.D, wt.zRef + wt.D] # [-x < xyz[0] < x, -y < xyz[1] < y, xyz[2] < z]
             e3d_model.maxnodes = 1 # On gbar/hpc, post_windfarm_flow() with more than one nodes sometimes fails
             e3d_model.post_windfarm_flow(wd, ws, outputformat='netCDF', clip_netCDF=xyz)
             # Calculate the averaged loads of the first AD, output results to <>adbladeloads.dat
