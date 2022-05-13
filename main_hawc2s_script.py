@@ -1,12 +1,15 @@
 import h2s
 
-blade_matrix = h2s.hawc2s_blade_to_geo(save=False)
+design_name = "flattened"
+U = 8 # Tested velocity [m/s]
+
+blade_matrix = h2s.hawc2s_blade_to_geo(design_name, save=False)
 
 h2s.plot_c_and_theta(blade_matrix)
 
-h2s.run_hawc2s("flattened")
+h2s.run_hawc2s(design_name)
 
-# Run HAWC2S
+h2s.pp_hawc2s_ind(design_name, U=U)
 
-# Plot the thrust curve, save the power 
+h2s.pp_hawc2s_pwr(design_name)
 
