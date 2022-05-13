@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import xarray
 
 # Run options
-parameter_name = "delta" # Set to either of: ["grid", "delta"]
+parameter_name = "design" # Set to either of: ["grid", "delta", design]
 check_against_DES = False # Set to True to check against DTU10MW loading
 pp_adbladeloads_option = True # Set to True to post process AD blade loads
 pp_power_option = True # Set to True to post process power
@@ -83,7 +83,7 @@ def plot_adbladeloads(filename_path):
     ax[1].plot(r_nd, Fn, label=fr"${parameter_name}$={parameter_value}")
     return
 
-def calc_UAD(data, x, y, z, D, n=32, var='U'):
+def calc_UAD(data, x, y, z, D, n=128, var='U'):
     '''
     Calculate <U_AD> at each position.
     A n by n rectangular grid is masked by sqrt(y^2 + z^2) < R.
@@ -234,7 +234,7 @@ if pp_advd_option:
         probed_advd_results[advd_iterator, :] = probed_advd_result
         advd_iterator +=1
     
-    yd = dict(rotation=0, ha='right')     # Shortcut to flip y-label
+    yd = dict(rotation=0, ha='right')     # Shortcut to flip y-label, credit to Mads
     ax.set_ylabel(r'$\dfrac{ \langle U_{AD} \rangle}{U_{H}}$ [-]', yd)
     ax.set_xlabel('$x/D$')
     ax.grid()
