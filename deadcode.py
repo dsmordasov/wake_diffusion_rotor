@@ -2,6 +2,10 @@
 
 #%% momentum transfer graphs - velocity differentials
 
+# in calc_sigma() definition:
+    data_vars['dV/dy'] = diffy['V']
+    data_vars['dW/dz'] = diffz['W']
+
 # Hardcoding for momentum transport analysis
 mt_option = True
 differentials_cmap = cm.RdBu
