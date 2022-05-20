@@ -220,23 +220,19 @@ def calc_sigma(data):
     data_vars['V'] = data['V']
     data_vars['W'] = data['W']
     data_vars['P'] = data['P']
-    data_vars['muT'] = data['muT']
-    data_vars['tke'] = data['tke']
-    data_vars['epsilon'] = data['epsilon']
+    data_vars['muT'] = data['muT'] # Dynamic viscosity [kg m^-1 s^-1]
+    data_vars['tke'] = data['tke'] # Turbulent kinetic energy [m^2 s^-2]
+    data_vars['epsilon'] = data['epsilon'] 
    
     # 1st derivatives
     diffx = data.differentiate(coord='x')
     diffy = data.differentiate(coord='y')
     diffz = data.differentiate(coord='z')
-    
-    data_vars['dV/dy'] = diffy['V']
-    data_vars['dW/dz'] = diffz['W']
-    #data_vars['d/dz'] = diffz
 
     # Calculate turbulent time scale
     data_vars['tau'] = data['tke']/data['epsilon']
 
-    # Calculate Reynolds stresses
+    # Calculate Reynolds stresses (mu / rho = nu === kinematic viscosity)
     uv = -data['muT'] / rho * (diffy['U'] + diffx['V'])
     vu = uv
     uw = -data['muT'] / rho * (diffz['U'] + diffx['W'])
@@ -282,6 +278,16 @@ def calc_sigma(data):
     return sigma_data
 
 def pp_tke(sigma_data, axis_counter):
+    ''' Post-process turbulent kinetic energy.
+    
+    Produces an [M x 2] sized graph, with left side containing M y-plane cuts
+    of normalised TKE, and the right side containing M z-plane cuts of 
+    normalised TKE.
+    
+    Input:
+        sigma_data = xarray object
+        axis_counter = 
+    '''
     current_label = r"$\hat{\delta}$ = " + str(analysed_deltas[axis_counter])
     
     x_limit = (-0.5, 5) # [D]
