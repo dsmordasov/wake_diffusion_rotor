@@ -27,14 +27,13 @@ z_norm = zh / D # Normalising hub height [D]
 
 # Let the hardcoding begin, change path if required
 os.chdir(r"D:\AE EWEM MSc\T H E S I S\6_code\code repository\run_data\joukowski")
+analysed_flowdata_paths = ['d0.15/flowdata.nc', 'd0.35/flowdata.nc', 'd0.60/flowdata.nc']
 
 # Run options
 parameter_name = "delta" # Set to either of: ["grid", "delta", design]
 
 pp_adbladeloads_option = False # Set to True to post process AD blade loads
 check_against_DES = True # Set to True to check against DTU10MW loading
-
-
 
 pp_advd_option = False # Set to True to post process velocity deficits (takes a while)
 advd_x_probe_D = 5 # Distance x at which we probe for velocity deficit [D]
@@ -44,7 +43,6 @@ analysed_spacing = 2.5 # Distance between probed Gaussian hat distances [D]
 n_hats = 6 # How many Gaussian hats would you like in your graph?
 first_probed_distance = -analysed_spacing
 last_probed_distance = (n_hats - 1) * analysed_spacing 
-analysed_flowdata_paths = ['d0.15/flowdata.nc', 'd0.35/flowdata.nc', 'd0.60/flowdata.nc']
 n_deltas = len(analysed_flowdata_paths) # Number of deltas investigated
 
 gh_option = True # Set to True to get a gaussian hat graph of velocity deficits
@@ -52,11 +50,6 @@ if gh_option:
     analysed_deltas = np.array([0.15, 0.35, 0.60])
     colors = ['r', 'g', 'b'] # Set as many as there are analysed deltas
     analysed_downstream_xs = np.arange(first_probed_distance, last_probed_distance, analysed_spacing)
-
-gh_single_option = False
-if gh_single_option:
-    analysed_deltas = np.array([0.15])
-    analysed_downstream_xs = 0
 
 tke_option = True
 tke_cmap = cm.jet
@@ -183,36 +176,6 @@ def pp_power(filename_path):
     parameter_value = determine_parameter_value(filename_path)
     return parameter_value, power_data 
         
-# Create lists of found pathnames
-adbladeloads_paths = glob.glob("**/*_adbladeloads.dat", recursive=True)
-flowdata_paths = glob.glob("**/flowdata.nc", recursive=True)
-power_paths = glob.glob("**/Power*.dat", recursive=True)
-
-if not adbladeloads_paths:
-    print("Found no adbladeloads.dat files!")    
-if not flowdata_paths:
-    print("Found no flowdata.nc files!")
-
-def pp_single_gh(filename_path, n=128):
-    """
-    Post process netcdf file to produce gaussian hat plots.
-    """
-    U_profiles = np.zeros([1, n])
-    
-    z_line = 1.2 * np.linspace(-R, R, n) + zh # Vertical line of the velocity profile
-
-    data = xarray.open_dataset(filename_path)
-    pos = analysed_downstream_xs
-    
-    print(f"x/D = {pos}")
-    U_profiles = (data.U.interp(x=pos*D, y=0, z=z_line) / UH) # Velocity deficit [-] (0 none, 1 fully stopped flow)
-    print(U_profiles)
-    U_hat =U_profiles #+ pos #- analysed_spacing
-    print(np.mean(U_hat))
-    #print((U_hat - pos ) / analysed_spacing)
-    ax.plot(U_hat + pos, (z_line - 29.85) / D) # 29.85m  is the distance to ground
-    ax.axvline(pos, color='k', linestyle='dotted')
-
 def pp_gh(filename_path, n=128, color='r'):
     """
     Post process netcdf file to produce gaussian hat plots.
@@ -318,80 +281,63 @@ def calc_sigma(data):
     sigma_data = xarray.Dataset(data_vars=data_vars)
     return sigma_data
 
-
-
 def pp_tke(sigma_data, axis_counter):
     current_label = r"$\hat{\delta}$ = " + str(analysed_deltas[axis_counter])
     
-    x_limit = (-0.5, 5)
-    y_limit = (-0.7, 0.7)
-    #y_limit_dWdz = (-0.6, 0.6)
-    #z_limit = () # TODO: Normalize z with zh
+    x_limit = (-0.5, 5) # [D]
+    y_limit = (-0.7, 0.7) # [D]
+    y_limit_zplane = (-0.65, 0.9)
     
     # Hardcoded colorbar minima and maxima
     vmin_left = -0.06
     vmax_left = 0.08
     vmin_right = -0.11
     vmax_right = 0.09
-    
-    # # Set up limits for the colorbar
-    # global left_min
-    # global left_max
-    # global right_min
-    # global right_max
-    
-    # Left: dV/dy
-    zplane_data = sigma_data.interp(z=zh)
+
+    # Left graphs: y plane
+    zplane_data = sigma_data.interp(z=zh) # Slice at hub height
     X, Y = np.meshgrid(zplane_data.x, zplane_data.y)
-    # left_current_min = np.min(zplane_data['dV/dy'])
-    # left_current_max = np.max(zplane_data['dV/dy'])
-    left_plot = axes[axis_counter, 0].contourf(X / D, Y / D, zplane_data['tke'].T,
+    tim_z = np.sqrt(zplane_data['tke'].T * (2/3)) / UH # Turbulence intensity measure
+    left_plot = axes[axis_counter, 0].contourf(X / D, Y / D, tim_z,
                                                cmap=tke_cmap)#, vmin=vmin_left, vmax=vmax_left)
-    axes[axis_counter, 0].text(x_limit[0] + 1e-1, y_limit[1] + 0.5e-1, current_label)
+    axes[axis_counter, 0].text(x_limit[0] + 1e-1,
+                               y_limit[1] + 0.5e-1,
+                               current_label)
     
     
-    # Right: dW/dz
-    yplane_data = sigma_data.interp(y=0)
+    # Right graphs: z plane
+    yplane_data = sigma_data.interp(y=0) # Slice vertically
+    tim_y = np.sqrt(yplane_data['tke'].T * (2/3)) / UH # Turbulence intensity measure
     X, Z = np.meshgrid(yplane_data.x, yplane_data.z)
-    # right_current_min = np.min(yplane_data['dW/dz'])
-    # right_current_max = np.max(yplane_data['dW/dz'])
-    right_plot = axes[axis_counter, 1].contourf(X / D, Z / D - z_norm, yplane_data['tke'].T,
+    right_plot = axes[axis_counter, 1].contourf(X / D, Z / D - z_norm, tim_y,
                                                 cmap=tke_cmap)#, vmin=vmin_right, vmax=vmax_right)
-    axes[axis_counter, 1].text(x_limit[0] + 1e-1, y_limit[1] + 0.5e-1, current_label)
+    axes[axis_counter, 1].text(x_limit[0] + 1e-1,
+                               y_limit_zplane[1] + 1e-1,
+                               current_label)
 
     plt.xlim(x_limit)
     axes[axis_counter, 0].set_ylim(y_limit)
     #axes[axis_counter, 1].set_ylim(y_limit)
-
-# =============================================================================
-#     # Set colorbar limits for left dV/dy and right dW/dz plots
-#     if axis_counter == 0:
-#         left_min = left_current_min
-#         left_max = left_current_max
-#         right_min = right_current_min
-#         right_max = right_current_max
-#     
-#     # Update the minimum/maximum if current value is lower/higher
-#     if left_current_min < left_min:
-#         left_min = left_current_min
-#     if left_current_max > left_max:
-#         left_max = left_current_max
-#     if right_current_min < right_min:
-#         right_min = right_current_min
-#     if right_current_max > right_max:
-#         right_max = right_current_max
-# =============================================================================
-    
+  
     return left_plot, right_plot
     
-        
+#%% Find, sort and print pathnames for various data files
+# Create lists of found pathnames
+adbladeloads_paths = glob.glob("**/*_adbladeloads.dat", recursive=True)
+flowdata_paths = glob.glob("**/flowdata.nc", recursive=True)
+power_paths = glob.glob("**/Power*.dat", recursive=True)
 
-# Sort pathnames, print for checking    
+if not adbladeloads_paths:
+    print("Found no adbladeloads.dat files!")    
+if not flowdata_paths:
+    print("Found no flowdata.nc files!")
+
 adbladeloads_paths.sort(key=numerical_sort_key)
 flowdata_paths.sort(key=numerical_sort_key)
 
 [print(path) for path in adbladeloads_paths]
 [print(path) for path in flowdata_paths]
+
 
 #%% Plot blade loads
 if pp_adbladeloads_option:
@@ -430,7 +376,7 @@ if pp_adbladeloads_option:
     print("AD blade loads plotted.")
 
 
-#%% Velocity deficit post-processing
+#%% Post-process velocity deficits
 
 if pp_advd_option:
     fig, ax = plt.subplots(figsize=[10, 6])
@@ -454,22 +400,7 @@ if pp_advd_option:
     fig.savefig('AD_b_deficits.pdf', bbox_inches='tight')
     #np.savetxt('advd_results.txt', probed_advd_results)
 
-#%% Gaussian hats
-
-if gh_single_option:
-    fix, ax = plt.subplots(figsize=[6, 6])
-    colors = ['r', 'g', 'b']
-    
-    for gh_iterator, filename_path in enumerate(analysed_flowdata_paths):
-        color = colors[gh_iterator]
-        print(color)
-        pp_single_gh(filename_path) #color=color)
-    
-    # TODO: Set ylim to [0, 1]
-    #plt.xticks(analysed_downstream_xs)
-    plt.ylabel("z/D [-]")
-    plt.xlabel("$U/U_{inf}$ [-]")
-
+#%% Plot velocity deficit Gaussian hats
 
 if gh_option:
     fix, ax = plt.subplots(figsize=[12, 4])
@@ -500,14 +431,13 @@ if gh_option:
                                 mpl.lines.Line2D([0], [0], color=colors[2], lw=2, label=r"$\hat{\delta}$ = " + str(analysed_deltas[2]))]
     ax.legend(handles=hardcode_legend_elements, loc="upper left")
 
-#%% Flow differentials
-
+#%% Plot turbulent kinetic energy
 
 if tke_option:
-    fig, axes = plt.subplots(3, 2, sharex=True, figsize=(12, 5))
+    fig, axes = plt.subplots(3, 2, sharex=True, figsize=(12, 6))
     
     for tke_iterator, filename_path in enumerate(analysed_flowdata_paths):
-        print(f"Ploting velocity differentials {tke_iterator + 1}/{n_deltas}")
+        print(f"Ploting turbulence intensity measure {tke_iterator + 1}/{n_deltas}")
         
         data = xarray.open_dataset(filename_path)
         pped_data = calc_sigma(data)
@@ -515,19 +445,16 @@ if tke_option:
         left_plot, right_plot = pp_tke(pped_data, tke_iterator)
         
         current_delta = analysed_deltas[tke_iterator]
-        #current_label = r"$\hat{\delta}$ = " + str(current_delta)
-        #plt.legend(current_label, loc="upper left", fontsize=5)
     
     
     colorbar_left = fig.colorbar(left_plot, ax=axes[:, 0])
     colorbar_right = fig.colorbar(right_plot, ax=axes[:, 1])
     
-    colorbar_left.ax.set_xlabel("TKE $[m^2 s^{-2}]$")
-    colorbar_right.ax.set_xlabel("TKE $[m^2 s^{-2}]$")
+    colorbar_left.ax.set_xlabel("    TKE $[-]$")
+    colorbar_right.ax.set_xlabel("    TKE $[-]$")
     
     axes[n_deltas-1, 0].set_xlabel("x [D]")
     axes[n_deltas-1, 1].set_xlabel("x [D]")
     
     axes[1, 0].set_ylabel("y [D]")
     axes[1, 1].set_ylabel("z [D]")
-    
