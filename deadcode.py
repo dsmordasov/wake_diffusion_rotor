@@ -1,5 +1,6 @@
 #%% local_pp_delta_study.py
-# momentum transfer graphs - velocity differentials
+
+#%% momentum transfer graphs - velocity differentials
 
 # Hardcoding for momentum transport analysis
 mt_option = True
@@ -100,3 +101,44 @@ if mt_option:
     
     axes[1, 0].set_ylabel("y [D]")
     axes[1, 1].set_ylabel("z [D]")
+
+#%% Single Gaussian hat velocity deficit graph
+
+gh_single_option = False
+if gh_single_option:
+    analysed_deltas = np.array([0.15])
+    analysed_downstream_xs = 0
+
+def pp_single_gh(filename_path, n=128):
+    """
+    Post process netcdf file to produce gaussian hat plots.
+    """
+    U_profiles = np.zeros([1, n])
+    
+    z_line = 1.2 * np.linspace(-R, R, n) + zh # Vertical line of the velocity profile
+
+    data = xarray.open_dataset(filename_path)
+    pos = analysed_downstream_xs
+    
+    print(f"x/D = {pos}")
+    U_profiles = (data.U.interp(x=pos*D, y=0, z=z_line) / UH) # Velocity deficit [-] (0 none, 1 fully stopped flow)
+    print(U_profiles)
+    U_hat =U_profiles #+ pos #- analysed_spacing
+    print(np.mean(U_hat))
+    #print((U_hat - pos ) / analysed_spacing)
+    ax.plot(U_hat + pos, (z_line - 29.85) / D) # 29.85m  is the distance to ground
+    ax.axvline(pos, color='k', linestyle='dotted')
+
+if gh_single_option:
+    fix, ax = plt.subplots(figsize=[6, 6])
+    colors = ['r', 'g', 'b']
+    
+    for gh_iterator, filename_path in enumerate(analysed_flowdata_paths):
+        color = colors[gh_iterator]
+        print(color)
+        pp_single_gh(filename_path) #color=color)
+    
+    # TODO: Set ylim to [0, 1]
+    #plt.xticks(analysed_downstream_xs)
+    plt.ylabel("z/D [-]")
+    plt.xlabel("$U/U_{inf}$ [-]")
