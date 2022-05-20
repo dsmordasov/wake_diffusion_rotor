@@ -8,11 +8,12 @@ import glob
 import re
 import os
 
-import config
+import config # import for plotting style
 
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+from matplotlib.pyplot import cm
 import xarray
 
 # Run parameters, DTU10MW
@@ -22,6 +23,7 @@ D = 178.3 # Rotor diameter [m]
 R = D / 2 # Rotor radius [m]
 #R = 86.36599 # Rotor radius, airfoil [m]
 zh = 119 # Reference hub height [m]
+z_norm = zh / D # Normalising hub height [D]
 
 # Let the hardcoding begin, change path if required
 os.chdir(r"D:\AE EWEM MSc\T H E S I S\6_code\code repository\run_data\joukowski")
@@ -32,16 +34,18 @@ parameter_name = "delta" # Set to either of: ["grid", "delta", design]
 pp_adbladeloads_option = False # Set to True to post process AD blade loads
 check_against_DES = True # Set to True to check against DTU10MW loading
 
+
+
 pp_advd_option = False # Set to True to post process velocity deficits (takes a while)
 advd_x_probe_D = 5 # Distance x at which we probe for velocity deficit [D]
 
-# Hardcoding for Gaussian hats (GH) velocity profile analysis
+#%% Hardcoding for Gaussian hats (gh) velocity profile analysis
 analysed_spacing = 2.5 # Distance between probed Gaussian hat distances [D]
-n_hats = 6 # How many Gaussian hats would you like?
+n_hats = 6 # How many Gaussian hats would you like in your graph?
 first_probed_distance = -analysed_spacing
 last_probed_distance = (n_hats - 1) * analysed_spacing 
 analysed_flowdata_paths = ['d0.15/flowdata.nc', 'd0.35/flowdata.nc', 'd0.60/flowdata.nc']
-
+n_deltas = len(analysed_flowdata_paths) # Number of deltas investigated
 
 gh_option = True # Set to True to get a gaussian hat graph of velocity deficits
 if gh_option:
@@ -53,6 +57,9 @@ gh_single_option = False
 if gh_single_option:
     analysed_deltas = np.array([0.15])
     analysed_downstream_xs = 0
+
+tke_option = True
+tke_cmap = cm.jet
 
 def numerical_sort_key(parsed_string): 
     """
@@ -227,6 +234,156 @@ def pp_gh(filename_path, n=128, color='r'):
         text_x_offset = -1e-1 * analysed_spacing
         text_y_offset = -2e-2 * analysed_spacing
         ax.text(pos + text_x_offset, text_y_offset, f"x/D = {pos}", rotation=90)
+
+def calc_sigma(data):
+    '''
+    Input: xarray object
+    Calculate flow field variables:
+        tau = turbulent time scale = k/eps
+        s_ij = normalized symmetric velocity gradient = 0.5*k/eps*(dU_i/dxj + dU_j/dxi)
+        omega_ij = normalized anti-symmetric velocity gradient = 0.5*k/eps*(dU_i/dxj - dU_j/dxi)
+        eta1 = 1st invariant = tr(s^2)
+        eta2 = 2nd invariant = tr(omega^2)
+        sigma = local shear parameter = k/eps*sqrt((dU_i/dx_j)^2) = sqrt(eta1 - eta2)
+        
+        courtesy of Mads Christian Baungaard
+    '''
+   
+    # Store variables in this dictionary
+    data_vars = {}
+   
+    # Also, include the original data:
+    data_vars['U'] = data['U']
+    data_vars['V'] = data['V']
+    data_vars['W'] = data['W']
+    data_vars['P'] = data['P']
+    data_vars['muT'] = data['muT']
+    data_vars['tke'] = data['tke']
+    data_vars['epsilon'] = data['epsilon']
+   
+    # 1st derivatives
+    diffx = data.differentiate(coord='x')
+    diffy = data.differentiate(coord='y')
+    diffz = data.differentiate(coord='z')
+    
+    data_vars['dV/dy'] = diffy['V']
+    data_vars['dW/dz'] = diffz['W']
+    #data_vars['d/dz'] = diffz
+
+    # Calculate turbulent time scale
+    data_vars['tau'] = data['tke']/data['epsilon']
+
+    # Calculate Reynolds stresses
+    uv = -data['muT'] / rho * (diffy['U'] + diffx['V'])
+    vu = uv
+    uw = -data['muT'] / rho * (diffz['U'] + diffx['W'])
+    wu = uw
+    vw = -data['muT'] / rho * (diffz['V'] + diffy['W'])
+    wv = vw
+    uu = 2. / 3. * data['tke'] - data['muT'] / rho * 2 * diffx['U']
+    vv = 2. / 3. * data['tke'] - data['muT'] / rho * 2 * diffy['V']
+    ww = 2. / 3. * data['tke'] - data['muT'] / rho * 2 * diffz['W']
+   
+    # Calculate TKE production to dissipation ratio
+    data_vars['Peps'] = (- (uu * diffx['U'] + uv * diffy['U'] + uw * diffz['U']) \
+                     - (vu * diffx['V'] + vv * diffy['V'] + vw * diffz['V']) \
+                     - (wu * diffx['W'] + wv * diffy['W'] + ww * diffz['W']))/data['epsilon']
+
+   
+    # Calculate eta1
+    s11 = 0.5*data_vars['tau']*2*diffx['U']
+    s22 = 0.5*data_vars['tau']*2*diffx['V']
+    s33 = -(s11+s22) # s_ij is traceless, i.e. tr(s)=0
+    s12 = 0.5*data_vars['tau']*(diffy['U'] + diffx['V'])
+    s13 = 0.5*data_vars['tau']*(diffz['U'] + diffx['W'])
+    s23 = 0.5*data_vars['tau']*(diffz['V'] + diffy['W'])
+    ss11=s11**2+s12**2+s13**2  # Helper variable 1
+    ss22=s12**2+s22**2+s23**2  # Helper variable 2
+    ss33=s13**2+s23**2+s33**2  # Helper variable 3
+    data_vars['eta1'] = ss11 + ss22 + ss33  # This is the EllipSys way!
+   
+    # Calculate eta2
+    o12 = 0.5*data_vars['tau']*(diffy['U'] - diffx['V'])
+    o13 = 0.5*data_vars['tau']*(diffz['U'] - diffx['W'])
+    o23 = 0.5*data_vars['tau']*(diffz['V'] - diffy['W'])
+    oo11=-o12**2 - o13**2  # Helper vairable 1
+    oo22=-o12**2 - o23**2  # Helper vairable 2
+    oo33=-o13**2 - o23**2  # Helper vairable 3
+    data_vars['eta2'] = oo11 + oo22 + oo33   # Again, this is the EllipSys way.
+   
+    # Calculate local shear parameter
+    data_vars['sigma'] = np.sqrt(data_vars['eta1'] - data_vars['eta2'])
+   
+    # Return new netcdf dataset
+    sigma_data = xarray.Dataset(data_vars=data_vars)
+    return sigma_data
+
+
+
+def pp_tke(sigma_data, axis_counter):
+    current_label = r"$\hat{\delta}$ = " + str(analysed_deltas[axis_counter])
+    
+    x_limit = (-0.5, 5)
+    y_limit = (-0.7, 0.7)
+    #y_limit_dWdz = (-0.6, 0.6)
+    #z_limit = () # TODO: Normalize z with zh
+    
+    # Hardcoded colorbar minima and maxima
+    vmin_left = -0.06
+    vmax_left = 0.08
+    vmin_right = -0.11
+    vmax_right = 0.09
+    
+    # # Set up limits for the colorbar
+    # global left_min
+    # global left_max
+    # global right_min
+    # global right_max
+    
+    # Left: dV/dy
+    zplane_data = sigma_data.interp(z=zh)
+    X, Y = np.meshgrid(zplane_data.x, zplane_data.y)
+    # left_current_min = np.min(zplane_data['dV/dy'])
+    # left_current_max = np.max(zplane_data['dV/dy'])
+    left_plot = axes[axis_counter, 0].contourf(X / D, Y / D, zplane_data['tke'].T,
+                                               cmap=tke_cmap)#, vmin=vmin_left, vmax=vmax_left)
+    axes[axis_counter, 0].text(x_limit[0] + 1e-1, y_limit[1] + 0.5e-1, current_label)
+    
+    
+    # Right: dW/dz
+    yplane_data = sigma_data.interp(y=0)
+    X, Z = np.meshgrid(yplane_data.x, yplane_data.z)
+    # right_current_min = np.min(yplane_data['dW/dz'])
+    # right_current_max = np.max(yplane_data['dW/dz'])
+    right_plot = axes[axis_counter, 1].contourf(X / D, Z / D - z_norm, yplane_data['tke'].T,
+                                                cmap=tke_cmap)#, vmin=vmin_right, vmax=vmax_right)
+    axes[axis_counter, 1].text(x_limit[0] + 1e-1, y_limit[1] + 0.5e-1, current_label)
+
+    plt.xlim(x_limit)
+    axes[axis_counter, 0].set_ylim(y_limit)
+    #axes[axis_counter, 1].set_ylim(y_limit)
+
+# =============================================================================
+#     # Set colorbar limits for left dV/dy and right dW/dz plots
+#     if axis_counter == 0:
+#         left_min = left_current_min
+#         left_max = left_current_max
+#         right_min = right_current_min
+#         right_max = right_current_max
+#     
+#     # Update the minimum/maximum if current value is lower/higher
+#     if left_current_min < left_min:
+#         left_min = left_current_min
+#     if left_current_max > left_max:
+#         left_max = left_current_max
+#     if right_current_min < right_min:
+#         right_min = right_current_min
+#     if right_current_max > right_max:
+#         right_max = right_current_max
+# =============================================================================
+    
+    return left_plot, right_plot
+    
         
 
 # Sort pathnames, print for checking    
@@ -342,3 +499,35 @@ if gh_option:
                                 mpl.lines.Line2D([0], [0], color=colors[1], lw=2, label=r"$\hat{\delta}$ = " + str(analysed_deltas[1])),
                                 mpl.lines.Line2D([0], [0], color=colors[2], lw=2, label=r"$\hat{\delta}$ = " + str(analysed_deltas[2]))]
     ax.legend(handles=hardcode_legend_elements, loc="upper left")
+
+#%% Flow differentials
+
+
+if tke_option:
+    fig, axes = plt.subplots(3, 2, sharex=True, figsize=(12, 5))
+    
+    for tke_iterator, filename_path in enumerate(analysed_flowdata_paths):
+        print(f"Ploting velocity differentials {tke_iterator + 1}/{n_deltas}")
+        
+        data = xarray.open_dataset(filename_path)
+        pped_data = calc_sigma(data)
+        
+        left_plot, right_plot = pp_tke(pped_data, tke_iterator)
+        
+        current_delta = analysed_deltas[tke_iterator]
+        #current_label = r"$\hat{\delta}$ = " + str(current_delta)
+        #plt.legend(current_label, loc="upper left", fontsize=5)
+    
+    
+    colorbar_left = fig.colorbar(left_plot, ax=axes[:, 0])
+    colorbar_right = fig.colorbar(right_plot, ax=axes[:, 1])
+    
+    colorbar_left.ax.set_xlabel("TKE $[m^2 s^{-2}]$")
+    colorbar_right.ax.set_xlabel("TKE $[m^2 s^{-2}]$")
+    
+    axes[n_deltas-1, 0].set_xlabel("x [D]")
+    axes[n_deltas-1, 1].set_xlabel("x [D]")
+    
+    axes[1, 0].set_ylabel("y [D]")
+    axes[1, 1].set_ylabel("z [D]")
+    
