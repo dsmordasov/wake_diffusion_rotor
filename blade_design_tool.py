@@ -10,7 +10,7 @@ import h2s
 
 U = 8 # Tested velocity [m/s]
 
-design_name = "new_design"
+design_name = "wdr_3"
 save_design = True
 
 #%% Load original blade design
@@ -60,18 +60,18 @@ working_mat = geo_mat.copy()
 
 
 # Linear chord addition
-root_linear_chord_addition = False
+root_linear_chord_addition = True
 if root_linear_chord_addition:
     linear_multiplier = radius_nd - 1.0
-    chord_addition = -2.0 # [m]
-    changes_until = 0.4 # r/R until which we change the chord
+    chord_addition = -1.0 # [m]
+    changes_until = 0.25 # r/R until which we change the chord
     i = 0
     for radius in radius_nd:
         if radius <= changes_until:
             working_mat[i, 2] = working_mat[i, 2] - chord_addition * linear_multiplier[i]
         i += 1
 
-tip_cos_chord_addition = True
+tip_cos_chord_addition = False
 if tip_cos_chord_addition:
     ncos_multiplier = - np.cos(radius_nd * np.pi) # Negative cos multiplier, from [-1, 1]
     chord_addition = - 0.5 # [m]
@@ -86,13 +86,13 @@ cos_chord_addition = False
 if cos_chord_addition:
     ncos_multiplier = - np.cos(radius_nd * np.pi) # Negative cos multiplier, from [-1, 1]
     print(ncos_multiplier)
-    chord_addition = 2.0 # [m]
+    chord_addition = 1.0 # [m]
     working_mat[:, 2] = working_mat[:, 2] + chord_addition * ncos_multiplier
     
 twist_the_root = False
 if twist_the_root:
     linear_multiplier = - (radius_nd - 1.0)
-    twist_addition = -10.0 # Positive value adds twist [deg]
+    twist_addition = -13.0 # Positive value adds twist [deg]
     changes_until = 0.25 # r/R until which we change the chord
     i = 0
     for radius in radius_nd:
@@ -100,6 +100,22 @@ if twist_the_root:
             working_mat[i, 1] = working_mat[i, 1] + twist_addition * linear_multiplier[i]
         i += 1
 
+supertwist_the_root = True
+if supertwist_the_root:
+    ncos_multiplier =  np.cos(radius_nd * np.pi) # Negative cos multiplier, from [-1, 1]
+    manual_multiplier = [1, 0.80, 0.81, 0.79, 0.55, 0.61, 0.50, 0.45, 0.39, 0.34, 0.32, 0.31, 0.30, 0.3, 0.21, 0.32, 0.17]
+    # multiplier above causes -2 deg aoa until 0.4 of r/R
+    # manual_multiplier = [1, 0.80, 0.80, 0.79, 0.53, 0.62, 0.51, 0.46, 0.41, 0.36, 0.33, 0.31, 0.28] #wdr2
+    # manual_multiplier = [1, 0.80, 0.81, 0.79, 0.55, 0.61, 0.50, 0.45, 0.39, 0.34, 0.32, 0.31, 0.30] #wdr1
+    # multiplier above causes -2 deg aoa until 0.25 of r/R
+    twist_addition = -64.0 # Positive value adds twist [deg]
+    changes_until = 0.4 # r/R until which we change the chord
+    i = 0
+    for radius in radius_nd:
+        if radius <= changes_until:
+            working_mat[i, 1] = working_mat[i, 1] + twist_addition * manual_multiplier[i]
+        i += 1
+        
 make_root_cylindrical = False
 if make_root_cylindrical:
     changes_until = 0.25 # r/R until which we use cylindrical airfoil
@@ -181,7 +197,7 @@ h2s.pp_hawc2s_ind(design_name, U=U)
 
 h2s.pp_hawc2s_pwr(design_name)
 
-h2s.pp_hawc2s_bladepower(design_name)
+#h2s.pp_hawc2s_bladepower(design_name)
 
 if save_design:
     h2s.hawc2s_files_to_geo(design_name)
