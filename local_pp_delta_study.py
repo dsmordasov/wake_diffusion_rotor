@@ -54,6 +54,15 @@ if gh_option:
 tke_option = True
 tke_cmap = cm.jet
 
+# Momentum transport terms 
+# 0: d(p)/dx
+# 1: d\overline(u'u')/dx
+# 2: d\overline(u'v')/dy
+# 3: d\overline(u'w')/dw
+mtt_option = range(6) # range(4) for mtt terms, range(6) to plot u'v' and u'w' too
+mtt_cmap = cm.RdBu
+
+
 def numerical_sort_key(parsed_string): 
     """
     Helper key function to sort a list of pathnames based on studied 
@@ -233,6 +242,7 @@ def calc_sigma(data):
     data_vars['tau'] = data['tke']/data['epsilon']
 
     # Calculate Reynolds stresses (mu / rho = nu === kinematic viscosity)
+    # Using Boussinesq eddy viscosity hypothesis 
     uv = -data['muT'] / rho * (diffy['U'] + diffx['V'])
     vu = uv
     uw = -data['muT'] / rho * (diffz['U'] + diffx['W'])
@@ -242,6 +252,14 @@ def calc_sigma(data):
     uu = 2. / 3. * data['tke'] - data['muT'] / rho * 2 * diffx['U']
     vv = 2. / 3. * data['tke'] - data['muT'] / rho * 2 * diffy['V']
     ww = 2. / 3. * data['tke'] - data['muT'] / rho * 2 * diffz['W']
+    
+    # Calculate momentum transport terms in RANS equation
+    data_vars['term0'] = data_vars['P'].differentiate(coord='x')
+    data_vars['term1'] = uu.differentiate(coord='x')
+    data_vars['term2'] = uv.differentiate(coord='y')
+    data_vars['term3'] = uw.differentiate(coord='z')
+    data_vars['term4'] = uv
+    data_vars['term5'] = uw
    
     # Calculate TKE production to dissipation ratio
     data_vars['Peps'] = (- (uu * diffx['U'] + uv * diffy['U'] + uw * diffz['U']) \
@@ -293,19 +311,14 @@ def pp_tke(sigma_data, axis_counter):
     x_limit = (-0.5, 5) # [D]
     y_limit = (-0.7, 0.7) # [D]
     y_limit_zplane = (-0.65, 0.9)
-    
-    # Hardcoded colorbar minima and maxima
-    vmin_left = -0.06
-    vmax_left = 0.08
-    vmin_right = -0.11
-    vmax_right = 0.09
 
     # Left graphs: y plane
     zplane_data = sigma_data.interp(z=zh) # Slice at hub height
     X, Y = np.meshgrid(zplane_data.x, zplane_data.y)
     tim_z = np.sqrt(zplane_data['tke'].T * (2/3)) / UH # Turbulence intensity measure
     left_plot = axes[axis_counter, 0].contourf(X / D, Y / D, tim_z,
-                                               cmap=tke_cmap)#, vmin=vmin_left, vmax=vmax_left)
+                                               cmap=tke_cmap,
+                                               levels=np.linspace(0.04, 0.20, 11))
     axes[axis_counter, 0].text(x_limit[0] + 1e-1,
                                y_limit[1] + 0.5e-1,
                                current_label)
@@ -316,7 +329,87 @@ def pp_tke(sigma_data, axis_counter):
     tim_y = np.sqrt(yplane_data['tke'].T * (2/3)) / UH # Turbulence intensity measure
     X, Z = np.meshgrid(yplane_data.x, yplane_data.z)
     right_plot = axes[axis_counter, 1].contourf(X / D, Z / D - z_norm, tim_y,
-                                                cmap=tke_cmap)#, vmin=vmin_right, vmax=vmax_right)
+                                                cmap=tke_cmap,
+                                                levels=np.linspace(0.04, 0.20, 11))
+    axes[axis_counter, 1].text(x_limit[0] + 1e-1,
+                               y_limit_zplane[1] + 1e-1,
+                               current_label)
+
+    plt.xlim(x_limit)
+    axes[axis_counter, 0].set_ylim(y_limit)
+  
+    return left_plot, right_plot
+    
+def pp_mtt(sigma_data, mtt_term_index, axis_counter):
+    ''' Post-process momentum transport terms.
+            Momentum transport terms:
+        0: d(p)/dx
+        1: d\overline(u'u')/dx
+        2: d\overline(u'v')/dy
+        3: d\overline(u'w')/dw
+    '''
+    # Left graphs: y plane
+    zplane_data = sigma_data.interp(z=zh) # Slice at hub height
+    X, Y = np.meshgrid(zplane_data.x, zplane_data.y)
+    
+    # Right graphs: z plane
+    yplane_data = sigma_data.interp(y=0) # Slice vertically
+    X_z, Z = np.meshgrid(yplane_data.x, yplane_data.z)
+
+    # Depending on the currently plotted term
+    if mtt_term_index == 0:
+        current_xlabel = r"$\dfrac{\partial p}{\partial x}$"
+        plot_data_l = zplane_data['term0'].T
+        plot_data_r = yplane_data['term0'].T
+        current_levels_l = np.linspace(-1.5, 1.5, 10) # -1.5 -> 0.5
+        current_levels_r = np.linspace(-1.8, 1.8, 10) # -1.8 -> 0.6
+    elif mtt_term_index == 1:
+        current_xlabel = r"$\dfrac{\partial \overline{u' u'}}{\partial x}$"
+        plot_data_l = zplane_data['term1'].T
+        plot_data_r = yplane_data['term1'].T
+        current_levels_l = np.linspace(-0.02, 0.02, 10) # -0.02 -> 0.02
+        current_levels_r = np.linspace(-0.02, 0.02, 10) # -0.02 -> 0.02
+    elif mtt_term_index == 2:
+        current_xlabel = r"$\dfrac{\partial \overline{u' v'}}{\partial y}$"
+        plot_data_l = zplane_data['term2'].T
+        plot_data_r = yplane_data['term2'].T
+        current_levels_l = np.linspace(-0.06, 0.06, 10) # -0.06 -> 0.06
+        current_levels_r = np.linspace(-0.048, 0.048, 10) # -0.016 -> 0.048
+    elif mtt_term_index == 3:
+        current_xlabel = r"$\dfrac{\partial \overline{u' w'}}{\partial z}$"
+        plot_data_l = zplane_data['term3'].T
+        plot_data_r = yplane_data['term3'].T
+        current_levels_l = np.linspace(-0.048, 0.048, 10) # -0.016 -> 0.048
+        current_levels_r = np.linspace(-0.15, 0.15, 10) # -0.2 -> 0.08
+    elif mtt_term_index == 4:
+        current_xlabel = r"$\overline{u' v'}$"
+        plot_data_l = zplane_data['term4'].T
+        plot_data_r = yplane_data['term4'].T
+        current_levels_l = np.linspace(-1.0, 1.0, 10) # -1.00 -> 1.00
+        current_levels_r = np.linspace(-0.12, 0.12, 10) # -0.12 -> 0.09
+    elif mtt_term_index == 5:
+        current_xlabel = r"$\overline{u' w'}$"
+        plot_data_l = zplane_data['term5'].T
+        plot_data_r = yplane_data['term5'].T
+        current_levels_l = np.linspace(-0.36, 0.36, 10) # -0.36 -> 0.12
+        current_levels_r = np.linspace(-1.2, 1.2, 10) # -1.2 -> 1.2
+        
+    current_label = r"$\hat{\delta}$ = " + str(analysed_deltas[axis_counter])
+    
+    x_limit = (-0.5, 5) # [D]
+    y_limit = (-0.7, 0.7) # [D]
+    y_limit_zplane = (-0.65, 0.9)
+    
+    left_plot = axes[axis_counter, 0].contourf(X / D, Y / D, plot_data_l,
+                                               cmap=mtt_cmap,
+                                               levels=current_levels_l)#, vmin=vmin_left, vmax=vmax_left)
+    axes[axis_counter, 0].text(x_limit[0] + 1e-1,
+                               y_limit[1] + 0.5e-1,
+                               current_label)
+    
+    right_plot = axes[axis_counter, 1].contourf(X_z / D, Z / D - z_norm, plot_data_r,
+                                                cmap=mtt_cmap,
+                                                levels=current_levels_r)#, vmin=vmin_right, vmax=vmax_right)
     axes[axis_counter, 1].text(x_limit[0] + 1e-1,
                                y_limit_zplane[1] + 1e-1,
                                current_label)
@@ -325,8 +418,7 @@ def pp_tke(sigma_data, axis_counter):
     axes[axis_counter, 0].set_ylim(y_limit)
     #axes[axis_counter, 1].set_ylim(y_limit)
   
-    return left_plot, right_plot
-    
+    return left_plot, right_plot, current_xlabel
 #%% Find, sort and print pathnames for various data files
 # Create lists of found pathnames
 adbladeloads_paths = glob.glob("**/*_adbladeloads.dat", recursive=True)
@@ -452,9 +544,10 @@ if tke_option:
         
         current_delta = analysed_deltas[tke_iterator]
     
-    
     colorbar_left = fig.colorbar(left_plot, ax=axes[:, 0])
     colorbar_right = fig.colorbar(right_plot, ax=axes[:, 1])
+    
+    
     
     colorbar_left.ax.set_xlabel("    TKE $[-]$")
     colorbar_right.ax.set_xlabel("    TKE $[-]$")
@@ -464,3 +557,34 @@ if tke_option:
     
     axes[1, 0].set_ylabel("y [D]")
     axes[1, 1].set_ylabel("z [D]")
+
+#%% Plot RANS equation terms
+
+if mtt_option:    
+    for mtt_index in mtt_option:
+        fig, axes = plt.subplots(3, 2, sharex=True, figsize=(12, 6))
+        
+        for mtt_iterator, filename_path in enumerate(analysed_flowdata_paths):
+            print(f"Ploting momentum transport term {mtt_index}:  {mtt_iterator + 1}/{n_deltas}")
+            
+            data = xarray.open_dataset(filename_path)
+            pped_data = calc_sigma(data)
+            
+            left_plot, right_plot, current_xlabel = pp_mtt(pped_data, mtt_index, mtt_iterator)
+            
+            current_delta = analysed_deltas[mtt_iterator]
+        
+        
+        colorbar_left = fig.colorbar(left_plot, ax=axes[:, 0])
+        colorbar_right = fig.colorbar(right_plot, ax=axes[:, 1])
+        
+        colorbar_left.ax.set_xlabel(current_xlabel)
+        colorbar_right.ax.set_xlabel(current_xlabel)
+        
+        axes[n_deltas-1, 0].set_xlabel("x [D]")
+        axes[n_deltas-1, 1].set_xlabel("x [D]")
+        
+        axes[1, 0].set_ylabel("y [D]")
+        axes[1, 1].set_ylabel("z [D]")
+    
+# 30/5/22 - 1 hour work
