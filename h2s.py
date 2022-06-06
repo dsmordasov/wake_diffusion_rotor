@@ -162,7 +162,7 @@ def pp_hawc2s_ind(design_name, U=8, rho=1.225):
     ax[1].set_ylabel('fn $[-]$')
     ax[2].set_ylabel('aoa $[deg]$')
     ax[2].set_xlabel('Blade radius r/R $[-]$')
-    ax[2].set_ylim([0, 10])
+    ax[2].set_ylim([-6, 10]) 
     plt.tight_layout()
     
 
