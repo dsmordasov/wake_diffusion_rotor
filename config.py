@@ -135,13 +135,21 @@ if not platform == 'win32':
             self.wt_y=[0]
             self.type_i=np.array([0])
     
-    class TwobyTwo_Hornsrev1_wf(Hornsrev1Site):
+    class Row3_Hornsrev1_wf(Hornsrev1Site):
         def __init__(self, wt):
             Hornsrev1Site.__init__(self)
             self.Ti=0.06
-            self.wt_x=[0, 5*wt.D, 0, 5*wt.D]
-            self.wt_y=[0, 0, 5*wt.D, 5*wt.D]
-            self.type_i=np.array([0, 0, 0, 0])
+            self.wt_x=np.arange(0, 15, 5)*wt.D
+            self.wt_y=np.zeros(3)
+            self.type_i=np.zeros(3)
+    
+    class Row10_Hornsrev1_wf(Hornsrev1Site):
+        def __init__(self, wt):
+            Hornsrev1Site.__init__(self)
+            self.Ti=0.06
+            self.wt_x=np.arange(0, 50, 5)*wt.D
+            self.wt_y=np.zeros(10)
+            self.type_i=np.zeros(10)
 
 
 # Grid resolution settings
