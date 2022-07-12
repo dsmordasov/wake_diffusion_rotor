@@ -10,8 +10,10 @@ import h2s
 
 U = 8 # Tested velocity [m/s]
 
-design_name = "wdr_3"
+design_name = "WDR_10_MW"
 save_design = True
+plot_name_1 = f"{design_name}_chord_twist.pdf"
+plot_name_2 = f"{design_name}_forces.pdf"
 
 #%% Load original blade design
 # Read .ae and .htc files
@@ -54,6 +56,8 @@ ax[0].set_ylabel("Chord [m]")
 ax[1].plot(radius_nd, geo_mat[:, 1], label="Baseline")
 ax[1].set_ylabel("Twist [deg]")
 ax[1].set_xlabel("Blade radius r/R [-]")
+
+
 
 #%% Changing the design
 working_mat = geo_mat.copy()
@@ -103,13 +107,13 @@ if twist_the_root:
 supertwist_the_root = True
 if supertwist_the_root:
     ncos_multiplier =  np.cos(radius_nd * np.pi) # Negative cos multiplier, from [-1, 1]
-    manual_multiplier = [1, 0.80, 0.81, 0.79, 0.55, 0.61, 0.50, 0.45, 0.39, 0.34, 0.32, 0.31, 0.30, 0.3, 0.21, 0.32, 0.17]
+    #manual_multiplier = [1, 0.80, 0.81, 0.79, 0.55, 0.61, 0.50, 0.45, 0.39, 0.34, 0.32, 0.31, 0.30, 0.3, 0.21, 0.32, 0.17]
     # multiplier above causes -2 deg aoa until 0.4 of r/R
     # manual_multiplier = [1, 0.80, 0.80, 0.79, 0.53, 0.62, 0.51, 0.46, 0.41, 0.36, 0.33, 0.31, 0.28] #wdr2
-    # manual_multiplier = [1, 0.80, 0.81, 0.79, 0.55, 0.61, 0.50, 0.45, 0.39, 0.34, 0.32, 0.31, 0.30] #wdr1
+    manual_multiplier = [1, 0.80, 0.81, 0.79, 0.55, 0.61, 0.50, 0.45, 0.39, 0.34, 0.32, 0.31, 0.30] #wdr1
     # multiplier above causes -2 deg aoa until 0.25 of r/R
     twist_addition = -64.0 # Positive value adds twist [deg]
-    changes_until = 0.4 # r/R until which we change the chord
+    changes_until = 0.25 # r/R until which we change the chord
     i = 0
     for radius in radius_nd:
         if radius <= changes_until:
@@ -130,7 +134,9 @@ if make_root_cylindrical:
 # Plot new chord and twist on top of old
 ax[0].plot(radius_nd, working_mat[:, 2], label=f"{design_name}")
 ax[1].plot(radius_nd, working_mat[:, 1], label=f"{design_name}")
-plt.legend(loc=2)
+plt.legend(loc=5)
+
+fig.savefig(f"plots/{design_name}_c_theta.pdf", bbox_inches='tight')
 
 # Format the working_mat twists into the .htc version
 htc_twist = np.interp(twist_radii, working_mat[:, 0], working_mat[:, 1])
