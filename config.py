@@ -5,11 +5,14 @@ HAWC2S work and more.
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from cycler import cycler
 
 import os
 
 #%% Plot style, generously donated by Mads Christian Baungaard
 mpl.style.use('classic')
+# Use below rcParams if you have many lines to plot
+#mpl.rcParams['axes.prop_cycle'] = cycler('color', ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf', 'k'])
 plt.rcParams['font.family'] = 'STIXGeneral'
 plt.rcParams["legend.scatterpoints"] = 1
 plt.rcParams["legend.numpoints"] = 1
@@ -155,6 +158,16 @@ if not platform == 'win32':
 # Grid resolution settings
 # l: low, m: medium, f: fine (production), uf: ultra-fine (for grid study)
 
+test_res_grid = {
+    'grid_cells1_D': 2, # Cells per rotor diameter in the inner domain [D]
+    'adgrid_nr': 4, # Number of nodes in radial direction
+    'adgrid_ntheta': 4, # Number of nodes in polar direction
+    'ad_out': True, # Required for post_ad_bladeloads() method used later
+    'ad_out_reduce_r': 1, # Reduction of radial grid points for AD output (integer)
+    'ad_out_reduce_a': 1, # Reduction of azimuthal grid points for AD output (integer)
+    }
+
+
 l_res_grid = {
     'grid_cells1_D': 2, # Cells per rotor diameter in the inner domain [D]
     'adgrid_nr': 8, # Number of nodes in radial direction
@@ -173,7 +186,35 @@ m_res_grid = {
     'ad_out_reduce_a': 8, # Reduction of azimuthal grid points for AD output (integer)
     }
 
+#----- PRODUCTION GRID -----
 f_res_grid = {
+    'grid_cells1_D': 16, # Cells per rotor diameter in the inner domain [D]
+    'adgrid_nr': 64, # Number of nodes in radial direction
+    'adgrid_ntheta': 64, # Number of nodes in polar direction
+    'ad_out': True, # Required for post_ad_bladeloads() method used later
+    'ad_out_reduce_r': 1, # Reduction of radial grid points for AD output (integer)
+    'ad_out_reduce_a': 8, # Reduction of azimuthal grid points for AD output (integer)
+    } 
+
+uf_res_grid = {
+    'grid_cells1_D': 20, # Cells per rotor diameter in the inner domain [D]
+    'adgrid_nr': 64, # Number of nodes in radial direction
+    'adgrid_ntheta': 64, # Number of nodes in polar direction
+    'ad_out': True, # Required for post_ad_bladeloads() method used later
+    'ad_out_reduce_r': 1, # Reduction of radial grid points for AD output (integer)
+    'ad_out_reduce_a': 8, # Reduction of azimuthal grid points for AD output (integer)
+    }
+
+gs_5_res_grid = {
+    'grid_cells1_D': 16, # Cells per rotor diameter in the inner domain [D]
+    'adgrid_nr': 128, # Number of nodes in radial direction
+    'adgrid_ntheta': 128, # Number of nodes in polar direction
+    'ad_out': True, # Required for post_ad_bladeloads() method used later
+    'ad_out_reduce_r': 1, # Reduction of radial grid points for AD output (integer)
+    'ad_out_reduce_a': 8, # Reduction of azimuthal grid points for AD output (integer)
+    }
+
+gs_4_res_grid = {
     'grid_cells1_D': 16, # Cells per rotor diameter in the inner domain [D]
     'adgrid_nr': 64, # Number of nodes in radial direction
     'adgrid_ntheta': 64, # Number of nodes in polar direction
@@ -182,10 +223,28 @@ f_res_grid = {
     'ad_out_reduce_a': 8, # Reduction of azimuthal grid points for AD output (integer)
     }
 
-uf_res_grid = {
-    'grid_cells1_D': 20, # Cells per rotor diameter in the inner domain [D]
-    'adgrid_nr': 64, # Number of nodes in radial direction
-    'adgrid_ntheta': 64, # Number of nodes in polar direction
+gs_3_res_grid = {
+    'grid_cells1_D': 16, # Cells per rotor diameter in the inner domain [D]
+    'adgrid_nr': 32, # Number of nodes in radial direction
+    'adgrid_ntheta': 32, # Number of nodes in polar direction
+    'ad_out': True, # Required for post_ad_bladeloads() method used later
+    'ad_out_reduce_r': 1, # Reduction of radial grid points for AD output (integer)
+    'ad_out_reduce_a': 8, # Reduction of azimuthal grid points for AD output (integer)
+    }
+
+gs_2_res_grid = {
+    'grid_cells1_D': 16, # Cells per rotor diameter in the inner domain [D]
+    'adgrid_nr': 16, # Number of nodes in radial direction
+    'adgrid_ntheta': 16, # Number of nodes in polar direction
+    'ad_out': True, # Required for post_ad_bladeloads() method used later
+    'ad_out_reduce_r': 1, # Reduction of radial grid points for AD output (integer)
+    'ad_out_reduce_a': 8, # Reduction of azimuthal grid points for AD output (integer)
+    }
+
+gs_1_res_grid = {
+    'grid_cells1_D': 16, # Cells per rotor diameter in the inner domain [D]
+    'adgrid_nr': 8, # Number of nodes in radial direction
+    'adgrid_ntheta': 8, # Number of nodes in polar direction
     'ad_out': True, # Required for post_ad_bladeloads() method used later
     'ad_out_reduce_r': 1, # Reduction of radial grid points for AD output (integer)
     'ad_out_reduce_a': 8, # Reduction of azimuthal grid points for AD output (integer)
