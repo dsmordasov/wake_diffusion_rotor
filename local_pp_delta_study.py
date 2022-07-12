@@ -33,25 +33,26 @@ analysed_flowdata_paths = ['d0.15/flowdata.nc', 'd0.35/flowdata.nc', 'd0.60/flow
 parameter_name = "delta" # Set to either of: ["grid", "delta", design]
 
 pp_adbladeloads_option = False # Set to True to post process AD blade loads
-check_against_DES = True # Set to True to check against DTU10MW loading
+check_against_DES = False # Set to True to check against DTU10MW loading
 
 pp_advd_option = False # Set to True to post process velocity deficits (takes a while)
 advd_x_probe_D = 5 # Distance x at which we probe for velocity deficit [D]
 
 #%% Hardcoding for Gaussian hats (gh) velocity profile analysis
 analysed_spacing = 2.5 # Distance between probed Gaussian hat distances [D]
-n_hats = 6 # How many Gaussian hats would you like in your graph?
+n_hats = 5 # How many Gaussian hats would you like in your graph?
 first_probed_distance = -analysed_spacing
 last_probed_distance = (n_hats - 1) * analysed_spacing 
 n_deltas = len(analysed_flowdata_paths) # Number of deltas investigated
 
-gh_option = True # Set to True to get a gaussian hat graph of velocity deficits
+analysed_deltas = np.array([0.15, 0.35, 0.60])
+
+gh_option = False # Set to True to get a gaussian hat graph of velocity deficits
 if gh_option:
-    analysed_deltas = np.array([0.15, 0.35, 0.60])
     colors = ['r', 'g', 'b'] # Set as many as there are analysed deltas
     analysed_downstream_xs = np.arange(first_probed_distance, last_probed_distance, analysed_spacing)
 
-tke_option = True
+tke_option = False
 tke_cmap = cm.jet
 
 # Momentum transport terms 
@@ -59,9 +60,10 @@ tke_cmap = cm.jet
 # 1: d\overline(u'u')/dx
 # 2: d\overline(u'v')/dy
 # 3: d\overline(u'w')/dw
-mtt_option = range(6) # range(4) for mtt terms, range(6) to plot u'v' and u'w' too
+mtt_option = False # range(4) for mtt terms, range(6) to plot u'v' and u'w' too
 mtt_cmap = cm.RdBu
 
+vel_option = True
 
 def numerical_sort_key(parsed_string): 
     """
@@ -201,10 +203,11 @@ def pp_gh(filename_path, n=128, color='r'):
         U_hat = U_profiles[i] 
         
         # Plot the gaussian hat, along with text denoting the position probed
-        ax.plot(U_hat + pos - analysed_spacing, (z_line - 29.85) / D, color=color) # 29.85m  is the distance to ground
+        #ax.plot(U_hat + pos - analysed_spacing, (z_line - 29.85) / D, color=color) # 29.85m  is the distance to ground
+        ax.plot(U_hat + pos - analysed_spacing, (z_line - (29.85 + D/2)) / D, color=color) # 29.85m  is the distance to ground
         ax.axvline(pos, color='k', linestyle='dotted')
         text_x_offset = -1e-1 * analysed_spacing
-        text_y_offset = -2e-2 * analysed_spacing
+        text_y_offset = -2.5e-1 * analysed_spacing
         ax.text(pos + text_x_offset, text_y_offset, f"x/D = {pos}", rotation=90)
 
 def calc_sigma(data):
@@ -306,7 +309,7 @@ def pp_tke(sigma_data, axis_counter):
         sigma_data = xarray object
         axis_counter = 
     '''
-    current_label = r"$\hat{\delta}$ = " + str(analysed_deltas[axis_counter])
+    current_label = r"$\overline{\delta}$ = " + str(analysed_deltas[axis_counter])
     
     x_limit = (-0.5, 5) # [D]
     y_limit = (-0.7, 0.7) # [D]
@@ -331,6 +334,43 @@ def pp_tke(sigma_data, axis_counter):
     right_plot = axes[axis_counter, 1].contourf(X / D, Z / D - z_norm, tim_y,
                                                 cmap=tke_cmap,
                                                 levels=np.linspace(0.04, 0.20, 11))
+    axes[axis_counter, 1].text(x_limit[0] + 1e-1,
+                               y_limit_zplane[1] + 1e-1,
+                               current_label)
+
+    plt.xlim(x_limit)
+    axes[axis_counter, 0].set_ylim(y_limit)
+  
+    return left_plot, right_plot
+
+def pp_vel(sigma_data, axis_counter):
+    ''' Post-process turbulent kinetic energy.
+    '''
+    current_label = r"$\overline{\delta}$ = " + str(analysed_deltas[axis_counter])
+    
+    x_limit = (-0.5, 5) # [D]
+    y_limit = (-0.7, 0.7) # [D]
+    y_limit_zplane = (-0.65, 0.9)
+
+    # Left graphs: y plane
+    zplane_data = sigma_data.interp(z=zh) # Slice at hub height
+    X, Y = np.meshgrid(zplane_data.x, zplane_data.y)
+    vel_z = zplane_data['U'].T/UH # Streamwise elocity
+    left_plot = axes[axis_counter, 0].contourf(X / D, Y / D, vel_z,
+                                               cmap=tke_cmap,)
+                                               #levels=np.linspace(0.04, 0.20, 11))
+    axes[axis_counter, 0].text(x_limit[0] + 1e-1,
+                               y_limit[1] + 0.5e-1,
+                               current_label)
+    
+    
+    # Right graphs: z plane
+    yplane_data = sigma_data.interp(y=0) # Slice vertically
+    vel_y = yplane_data['U'].T/UH # Streamwise elocity
+    X, Z = np.meshgrid(yplane_data.x, yplane_data.z)
+    right_plot = axes[axis_counter, 1].contourf(X / D, Z / D - z_norm, vel_y,
+                                                cmap=tke_cmap,)
+                                                #levels=np.linspace(0.04, 0.20, 11))
     axes[axis_counter, 1].text(x_limit[0] + 1e-1,
                                y_limit_zplane[1] + 1e-1,
                                current_label)
@@ -394,7 +434,7 @@ def pp_mtt(sigma_data, mtt_term_index, axis_counter):
         current_levels_l = np.linspace(-0.36, 0.36, 10) # -0.36 -> 0.12
         current_levels_r = np.linspace(-1.2, 1.2, 10) # -1.2 -> 1.2
         
-    current_label = r"$\hat{\delta}$ = " + str(analysed_deltas[axis_counter])
+    current_label = r"$\overline{\delta}$ = " + str(analysed_deltas[axis_counter])
     
     x_limit = (-0.5, 5) # [D]
     y_limit = (-0.7, 0.7) # [D]
@@ -501,7 +541,7 @@ if pp_advd_option:
 #%% Plot velocity deficit Gaussian hats
 
 if gh_option:
-    fix, ax = plt.subplots(figsize=[12, 4])
+    fig, ax = plt.subplots(figsize=[12, 4])
     
     for gh_iterator, filename_path in enumerate(analysed_flowdata_paths):
         color = colors[gh_iterator]
@@ -510,8 +550,8 @@ if gh_option:
         pp_gh(filename_path, color=color)
     
     # Cut the graph to show the wake beyond the wind turbine width
-    wake_margin = 0.15
-    plt.ylim([0 - wake_margin, 1 + wake_margin])
+    wake_margin = 0.
+    plt.ylim([-0.6674 - wake_margin, 0.6674 + wake_margin]) # (29.85)/D + 0.5 = 0.6674, height of hub [D]
     
     # The following block makes the 1|0, 0.5, 0|1... ticks on the x axis
     n_ticks = len(analysed_downstream_xs)/2 + 2 # Number of ticks we will have
@@ -521,13 +561,17 @@ if gh_option:
     latex_fontsize = 18
     plt.xticks(ticks=x_ticks, labels = x_labels)
     plt.ylabel("$z/D \ [-]$", fontsize=latex_fontsize)
-    plt.xlabel("$U/U_{inf} \ [-]$", fontsize=latex_fontsize)
+    plt.xlabel("$U/U_{H} \ [-]$", fontsize=latex_fontsize)
     
     # Now let us create a hardcoded legend for this graph
     hardcode_legend_elements = [mpl.lines.Line2D([0], [0], color=colors[0], lw=2, label=r"$\hat{\delta}$ = " + str(analysed_deltas[0])),
                                 mpl.lines.Line2D([0], [0], color=colors[1], lw=2, label=r"$\hat{\delta}$ = " + str(analysed_deltas[1])),
                                 mpl.lines.Line2D([0], [0], color=colors[2], lw=2, label=r"$\hat{\delta}$ = " + str(analysed_deltas[2]))]
     ax.legend(handles=hardcode_legend_elements, loc="upper left")
+    
+    ax.set_xlim([-analysed_spacing*1.3, (n_hats-2)*analysed_spacing])
+    fig.savefig('../../plots/jou_gaussian_hats.pdf', bbox_inches='tight')
+
 
 #%% Plot turbulent kinetic energy
 
@@ -552,11 +596,12 @@ if tke_option:
     colorbar_left.ax.set_xlabel("    TKE $[-]$")
     colorbar_right.ax.set_xlabel("    TKE $[-]$")
     
-    axes[n_deltas-1, 0].set_xlabel("x [D]")
-    axes[n_deltas-1, 1].set_xlabel("x [D]")
+    axes[n_deltas-1, 0].set_xlabel("x/D $[-]$")
+    axes[n_deltas-1, 1].set_xlabel("x/D $[-]$")
     
-    axes[1, 0].set_ylabel("y [D]")
-    axes[1, 1].set_ylabel("z [D]")
+    axes[1, 0].set_ylabel("y/D $[-]$")
+    axes[1, 1].set_ylabel("z/D $[-]$")
+    fig.savefig('../../plots/jou_tke.pdf', bbox_inches='tight')
 
 #%% Plot RANS equation terms
 
@@ -581,10 +626,40 @@ if mtt_option:
         colorbar_left.ax.set_xlabel(current_xlabel)
         colorbar_right.ax.set_xlabel(current_xlabel)
         
-        axes[n_deltas-1, 0].set_xlabel("x [D]")
-        axes[n_deltas-1, 1].set_xlabel("x [D]")
+        axes[n_deltas-1, 0].set_xlabel("x/D $[-]$")
+        axes[n_deltas-1, 1].set_xlabel("x/D $[-]$")
         
-        axes[1, 0].set_ylabel("y [D]")
-        axes[1, 1].set_ylabel("z [D]")
+        axes[1, 0].set_ylabel("y/D $[-]$")
+        axes[1, 1].set_ylabel("z/D $[-]$")
+        
+        fig.savefig(f'../../plots/jou_mtt_{mtt_index}.pdf', bbox_inches='tight')
+
+#%% Plot velocity
+
+if vel_option:
+    fig, axes = plt.subplots(3, 2, sharex=True, figsize=(12, 6))
     
+    for vel_iterator, filename_path in enumerate(analysed_flowdata_paths):
+        print(f"Ploting velocity {vel_iterator + 1}/{n_deltas}")
+        
+        data = xarray.open_dataset(filename_path)
+        pped_data = calc_sigma(data)
+        
+        left_plot, right_plot = pp_vel(pped_data, vel_iterator)
+        
+        current_delta = analysed_deltas[vel_iterator]
+    
+    colorbar_left = fig.colorbar(left_plot, ax=axes[:, 0])
+    colorbar_right = fig.colorbar(right_plot, ax=axes[:, 1])
+    
+    colorbar_left.ax.set_xlabel(r"    $\dfrac{U}{U_H}$ $[-]$")
+    colorbar_right.ax.set_xlabel(r"    $\dfrac{U}{U_H}$ $[-]$")
+    
+    axes[n_deltas-1, 0].set_xlabel("x/D $[-]$")
+    axes[n_deltas-1, 1].set_xlabel("x/D $[-]$")
+    
+    axes[1, 0].set_ylabel("y/D $[-]$")
+    axes[1, 1].set_ylabel("z/D $[-]$")
+    fig.savefig('../../plots/jou_vel.pdf', bbox_inches='tight')
+
 # 30/5/22 - 1 hour work
