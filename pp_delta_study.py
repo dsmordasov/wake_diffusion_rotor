@@ -11,17 +11,19 @@ import numpy as np
 import matplotlib.pyplot as plt
 import xarray
 
+import config
+
 # Run options
-parameter_name = "design" # Set to either of: ["grid", "delta", design]
-check_against_DES = False # Set to True to check against DTU10MW loading
+parameter_name = "delta" # Set to either of: ["grid", "delta", design]
+check_against_DES = True # Set to True to check against DTU10MW loading
 pp_adbladeloads_option = True # Set to True to post process AD blade loads
-pp_power_option = True # Set to True to post process power
+pp_power_option = False # Set to True to post process power
 pp_advd_option = True # Set to True to post process velocity deficits (takes a while)
 advd_x_probe_D = 5 # Distance x at which we probe for velocity deficit [D]
 
 # Run parameters, DTU10MW
 rho = 1.225 # Air density [kg/m^3]
-UH = 11 # Simulation velocity [m/s]
+UH = 8 # Simulation velocity [m/s]
 D = 178.3 # Rotor diameter [m]
 zh = 119 # Reference hub height [m]
 
@@ -79,8 +81,8 @@ def plot_adbladeloads(filename_path):
     Ft = Ft / (rho * R * UH**2)
     Fn = Fn / (rho * R * UH**2)
 
-    ax[0].plot(r_nd, Ft, label=fr"${parameter_name}$={parameter_value}")
-    ax[1].plot(r_nd, Fn, label=fr"${parameter_name}$={parameter_value}")
+    ax[0].plot(r_nd, Ft, label="$\overline{\delta}$=" + str(parameter_value))
+    ax[1].plot(r_nd, Fn, label="$\overline{\delta}$=" + str(parameter_value))
     return
 
 def calc_UAD(data, x, y, z, D, n=128, var='U'):
@@ -127,7 +129,7 @@ def pp_advd(filename_path):
     Also from plotnetCDFad.py by Mads Christian Baungaard.
     """
     
-    x = np.arange(-7, 7.01, 0.25) * D
+    x = np.arange(-7, 20.01, 0.25) * D
     y = np.zeros(x.shape)
     z = np.ones(x.shape) * zh
     data = xarray.open_dataset(filename_path)
@@ -136,7 +138,7 @@ def pp_advd(filename_path):
     # Calculate disk-averaged quantities
     ADvar = calc_UAD(data, x, y, z, D)
     probed_advd = np.interp(advd_x_probe_D, x / D, ADvar / UH)
-    ax.plot(x / D, ADvar / UH, label=f'{parameter_name}={parameter_value}')
+    ax.plot(x / D, ADvar / UH, label='$\overline{\delta}=$' + str(parameter_value))
     return parameter_value, probed_advd
 
 def pp_power(filename_path):
@@ -170,7 +172,7 @@ power_paths.sort(key=numerical_sort_key)
 
 #%% Plot blade loads
 if pp_adbladeloads_option:
-    fig, ax = plt.subplots(2, 1, sharex=True, figsize=[10,6])
+    fig, ax = plt.subplots(2, 1, sharex=True, figsize=[13,9])
     
     for filename_path in adbladeloads_paths:
         plot_adbladeloads(filename_path)
@@ -179,7 +181,7 @@ if pp_adbladeloads_option:
     if check_against_DES:
         # Loads DTU10MW DES blade loads and plots them to validate against
         # The run parameters of the DES simulation are in the file
-        from py_wake_ellipsys.examples.data.turbines.dtu10mw import dtu10mw_bladeloading
+        from dtu10mw_des_bladeloads import dtu10mw_bladeloading
         r_nd_val = dtu10mw_bladeloading[:, 0] # Non-dimensionalised blade radius r/R [-]
         ft_val = -dtu10mw_bladeloading[:, 1] # Non-dimensionalised tangential force [-] (assumed axis system
         fn_val = dtu10mw_bladeloading[:, 3] # Non-dimensionalised azimuthal force [-] (assumed)
@@ -187,21 +189,22 @@ if pp_adbladeloads_option:
         ax[1].plot(r_nd_val, fn_val, label="DES")
         
     
-    ax[0].set_ylabel('ft $[-]$')
-    ax[0].legend(loc=1)
-    ax[1].set_ylabel('fn $[-]$')
+    ax[0].set_ylabel('$f_t$ $[-]$')
+    ax[1].legend(loc='upper left')
+    ax[1].set_ylabel('$f_a$ $[-]$')
     ax[1].set_xlabel('Blade radius r/R [-]')
-    plot_title = "$\overline{\delta}$ parameter study\n"
-    fig.suptitle(plot_title, y=1.01)
+    #plot_title = "$\overline{\delta}$ parameter study\n"
+    #fig.suptitle(plot_title, y=1.01)
     plt.tight_layout()
+    ax[0].set_xlim([0, 1])
     
-    for axis in ax:
-        axis.grid()
+    #for axis in ax:
+    #    axis.grid()
         
     if check_against_DES:
         fig.savefig('AD_b_loads_val.pdf', bbox_inches='tight')
     else:
-        fig.savefig('AD_b_loads.pdf', bbox_inches='tight')
+        fig.savefig('../../plots/jou_delta_loads.pdf', bbox_inches='tight')
     print("AD blade loads plotted.")
 
 #%% Power post-processing
@@ -235,12 +238,13 @@ if pp_advd_option:
         advd_iterator +=1
     
     yd = dict(rotation=0, ha='right')     # Shortcut to flip y-label, credit to Mads
-    ax.set_ylabel(r'$\dfrac{ \langle U_{AD} \rangle}{U_{H}}$ [-]', yd)
-    ax.set_xlabel('$x/D$')
-    ax.grid()
-    ax.legend(loc='upper right')
+    ax.set_ylabel(r'$\dfrac{ \langle U_{AD} \rangle}{U_{H}}$ $[-]$', yd)
+    ax.set_xlabel('$x/D$ $[-]$')
+    #ax.grid()
+    ax.legend(loc='lower left')
+    ax.set_xlim([-7, 20])
     
-    fig.savefig('AD_b_deficits.pdf', bbox_inches='tight')
+    fig.savefig('../../plots/jou_delta_advd.pdf', bbox_inches='tight')
     #np.savetxt('advd_results.txt', probed_advd_results)
 #%% 
 
