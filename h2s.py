@@ -111,12 +111,15 @@ def pp_hawc2s_ind(design_name, U=8, rho=1.225):
     s       = data[:, 0]      # Blade span [m]
     S       = s[-1] + 0.001   # Maximum blade span (w/ tip fix) [m]
     s       = np.append(s, S) # Tip fix
-    Ft      = data[:, 6]      # Tangential force per unit length [N/m]
+    Ft      = data[:, 6]      # Thrust force per unit length [N/m]
     Ft      = np.append(Ft, 0)# Tip fix
     Fn      = data[:, 7]      # Azumuthal force per unit length [N/m]
     Fn      = np.append(Fn, 0)# Tip fix
     aoa     = np.rad2deg(data[:, 4])     # Angle of attack [deg]
     aoa     = np.append(aoa, 0)# Tip fix
+    
+    baseline_C_T = (np.sum(s * Ft)) / (0.5 * rho * np.pi * S**2 * U**2) 
+    #print(f"baseline C_T= {C_T_calced}")
     
     # Normalisation of forces, non-dimensionalisation of radius
     s_nd    = s / S           # Blade span, non-dimensioned [-]
@@ -140,6 +143,8 @@ def pp_hawc2s_ind(design_name, U=8, rho=1.225):
     aoa     = np.rad2deg(data[:, 4])     # Angle of attack [deg]
     aoa     = np.append(aoa, 0)# Tip fix
     
+    new_design_C_T = (np.sum(s * Ft)) / (0.5 * rho * np.pi * S**2 * U**2) 
+    
     # Normalisation of forces, non-dimensionalisation of radius
     s_nd    = s / S           # Blade span, non-dimensioned [-]
     ft = Ft / (rho * S * U**2) # Normalised tangential force [-]
@@ -157,6 +162,7 @@ def pp_hawc2s_ind(design_name, U=8, rho=1.225):
     ax[1].plot(s_nd, fn, label=f"{design_name}")
     ax[2].plot(s_nd, aoa, label=f"{design_name}")
     
+    #ax[0].set_xlim([-0.01, 0.09])
     ax[0].set_ylabel('ft $[-]$')
     ax[0].legend(loc=0)
     ax[1].set_ylabel('fn $[-]$')
@@ -165,6 +171,10 @@ def pp_hawc2s_ind(design_name, U=8, rho=1.225):
     ax[2].set_ylim([-6, 10]) 
     plt.tight_layout()
     
+    print(f"{'baseline C_T: ':<20}" + f"{str(np.round(baseline_C_T, 4))} [-].")
+    print(f"{'{design_name} C_T: ':<20}" + f"{str(np.round(new_design_C_T, 4))} [-].")
+    
+    fig.savefig(f"../plots/{design_name}_forces.pdf", bbox_inches='tight')
 
 def pp_hawc2s_bladepower(design_name):
     """Calculate the power contribution along the blade.
