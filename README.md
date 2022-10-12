@@ -12,13 +12,18 @@ The benefits in wake mitigation and power generation in wind farms from using th
 
 ### Engineering software used
 PyWakeEllipSys is a CFD package software, which combines a RANS based wind farm flow model with PyWake, an open source AEP calculator, with the RANS model being based on the general purpose flow solver EllipSys3D. This is a Fortran/MPI based closed source licensed software, the development of which was initiated at DTU, and now continued at DTU Wind and Energy Systems. 
+
 HAWCStab2 is a frequency based aeroservoelastic code for steady states computation, most often used for stability analysis of wind turbines, developed at DTU. HAWC2S is a command line version of this code
 
 ### Script descriptions
 `config.py` contains quality of life imports, visualising scripts and settings for running PWES simulations on the DTU HPC cluster and local post-processing scripts.
+
 `h2s.py` contains the same for local HAWC2S simulations and posprocessing.
+
 `blade_design_tool.py` contains code that allows for local wind turbine blade design, and subsequent evaluation using HAWC2S.
 
+
 Files beginning with `pwes` are PWES simulation scripts to be ran on the DTU HPC cluster.
+
 Files beginning with `pp` are local post-processing scripts, and (most often) require the data from the DTU HPC cluster simulations.
 
