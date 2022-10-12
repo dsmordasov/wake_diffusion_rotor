@@ -1,6 +1,7 @@
-"""This file was made in order to run simulations for Joukowsky and RANS 
-DTU10MW wind turbine, in order to validate these methods against present DES.
-DES: U = 8.0 m/s, rho = 1.225 kg/m^3, RPM = 6.4259, TI = 0.00
+"""
+This file was made in order to run simulations a three wind turbine row 
+simulation using the Joukowsky `2xxx` forcing model of PyWakeEllipSys, with a
+user-chosen \overline{\delta} parameter value.
 """
 
 # Imports

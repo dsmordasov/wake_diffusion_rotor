@@ -1,6 +1,9 @@
-"""This file was made in order to run simulations for Joukowsky and RANS 
-DTU10MW wind turbine, in order to validate these methods against present DES.
-DES: U = 8.0 m/s, rho = 1.225 kg/m^3, RPM = 6.4259, TI = 0.00
+"""
+This file was made in order to run simulations for Joukowsky and RANS 
+DTU10MW wind turbine. It compares the newly obtained design created through the
+HAWC2S (in `blade_design_tool.py`) in the PWES CFD, and compares the main 
+parameter - velocity deficit - of the baseline configuration against this new
+altered wake-diffusion rotor design.
 """
 
 # Imports
@@ -13,7 +16,7 @@ import config
 import pps
 
 run_grid = False
-design_name = 'wdr_3'
+design_name = 'wdr_2'
 
 baseline_power = 3.959274 # MW, flattened PWES at TI=0.06
 
