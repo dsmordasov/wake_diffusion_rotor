@@ -1,5 +1,8 @@
-# One month to go before I give in this thesis
-# Hello hardcode my old friend
+"""
+This code was made in order to post process the results of the grid study.
+Excuse the heavy hardcoding, as this was performed very close to the thesis 
+deadline.
+"""
 import numpy as np
 import config
 
@@ -50,7 +53,6 @@ plt.xticks(wake_grid_results[:, 0])
 
 if save_figs:
     fig.savefig('plots/wake_grid_relel.pdf', bbox_inches='tight')
-
 
 fig, ax = plt.subplots(2, 1, sharex=True, figsize=[10,6])
 ax[0].plot(ad_grid_results[:, 0], ad_grid_power, graph_marker)

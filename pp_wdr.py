@@ -1,7 +1,7 @@
 """
-This code was made in order to post process the results of `delta_study.py`,
-focusing on the effects of varying \overline{\delta} and thus the force 
-distribution over a wind turbine blade on the wake of a single wind turbine.
+This code was made in order to post process the results of the altered wake
+diffusion rotor 'WDR' compared to the baseline DTU10MW reference wind turbine
+blade design.
 """
 
 import glob
