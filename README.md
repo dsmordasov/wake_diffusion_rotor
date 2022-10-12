@@ -31,7 +31,7 @@ Files beginning with `pp` are local post-processing scripts, and (most often) re
 - lateral and vertical momentum transport 
 - power production along inflow-aligned wind turbine rows
 - load distributions along the wind turbine blade for varying configurations
-... and more, as can be viewed in the thesis. 
+- ... and more, as can be viewed in the thesis. 
 
 Big thanks to my thesis co-supervisor Mads Christian Baungaard for providing me with his highly relevant code regarding PyWakeEllipSys CFD data post-processing.
 
