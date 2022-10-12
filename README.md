@@ -25,5 +25,14 @@ HAWCStab2 is a frequency based aeroservoelastic code for steady states computati
 
 Files beginning with `pwes` are PWES simulation scripts to be ran on the DTU HPC cluster.
 
-Files beginning with `pp` are local post-processing scripts, and (most often) require the data from the DTU HPC cluster simulations.
+Files beginning with `pp` are local post-processing scripts, and (most often) require the data from the DTU HPC cluster simulations. This allows for analysis and visualisation of the produced CFD and BEM data. The graphs producible with these codes include: 
+- wind turbine wake velocity deficits
+- turbulence intensity
+- lateral and vertical momentum transport 
+- power production along inflow-aligned wind turbine rows
+- load distributions along the wind turbine blade for varying configurations
+... and more, as can be viewed in the thesis. 
+
+Big thanks to my thesis co-supervisor Mads Christian Baungaard for providing me with his highly relevant code regarding PyWakeEllipSys CFD data post-processing.
+
 
