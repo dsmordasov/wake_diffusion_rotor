@@ -1,6 +1,9 @@
-A suite of Python scientific computing tool scripts running and postprocessing PyWakeEllipSys (PWES) and HAWC2S simulations, investigating the 'wake-diffusion' rotor concept for my MSc thesis.
+A suite of Python scientific computing tool scripts running and postprocessing PyWakeEllipSys (PWES) and HAWC2S simulations, investigating the 'wake-diffusion' rotor concept for my MSc thesis. 
 
 You can download the thesis in its entirety here: [Numerical investigation of the wake-diffusion rotor concept](http://resolver.tudelft.nl/uuid:f4a34434-a186-4127-aedd-d9d8f5e62c2a)
+
+
+tl;dr changing the geometry of the blade can, at the cost of individual wind turbine power generation loss, produce higher power generation over multiple wind turbines.
 
 ### Abstract
 With the growing global utilisation of wind energy, lowering of its levelised cost of energy is pursued. This effort is hindered by wind turbine wakes and their detrimental effects on wind farm profitability. Most currently researched wake mitigation methods are based on wind farm system-level interventions, and there is a research gap on individual wind turbine design wake alleviation measures.
